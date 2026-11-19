@@ -2673,6 +2673,7 @@ resolveConceptSet <- function(conceptSet,
 
   sql <- CirceR::buildConceptSetQuery(json_txt)
   sql <- SqlRender::render(sql = sql, vocabulary_database_schema = cdmDatabaseSchema)
+  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
   conceptIdList <- DatabaseConnector::querySql(
     connection = connection,
     sql,

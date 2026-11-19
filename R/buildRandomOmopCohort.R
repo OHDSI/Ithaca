@@ -443,7 +443,7 @@ buildRandomOmopCohort <- function(database = NULL,
     )
   }
 
-  message("Rendering and translating random cohort SQL.")
+  message("Rendering random cohort SQL.")
   if (randomSampleFilterId != -1L) {
     message(paste0("Random sample pool restricted to cohort_definition_id=", randomSampleFilterId, "."))
   }
@@ -457,17 +457,13 @@ buildRandomOmopCohort <- function(database = NULL,
     source_cohort_definition_id = as.integer(sourceCohortDefinitionId),
     random_sample_from_cohort_definition_id = randomSampleFilterId,
     sample_size = as.integer(sample_size),
-    min_visit_start_date = min_visit_start_date,
-    max_visit_end_date = max_visit_end_date,
+    min_visit_start_date = format(as.Date(min_visit_start_date, format = "%m/%d/%Y"), "%Y-%m-%d"),
+    max_visit_end_date = format(as.Date(max_visit_end_date, format = "%m/%d/%Y"), "%Y-%m-%d"),
     min_age = as.integer(min_age),
     max_age = as.integer(max_age)
   )
 
-  translatedSql <- SqlRender::translate(
-    sql = renderedSql,
-    targetDialect = "spark"
-  )
-  message("Random cohort SQL rendered and translated.")
+  message("Random cohort SQL rendered; CohortGenerator translates it to the target dialect.")
 
   sourceCohortDefinitionSet <- data.frame(
     cohortId = as.integer(sourceCohortDefinitionId),
@@ -479,7 +475,7 @@ buildRandomOmopCohort <- function(database = NULL,
   randomCohortDefinitionSet <- data.frame(
     cohortId = as.integer(cohort_definition_id),
     cohortName = cohortName,
-    sql = translatedSql,
+    sql = renderedSql,
     stringsAsFactors = FALSE
   )
 

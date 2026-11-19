@@ -557,8 +557,8 @@ ithDataDrivenCollectDatabase <- function(conditionName, databaseId, cdmMap, conf
   modulusFilter <- if (params$personModulus > 1L) paste0(" AND co.person_id % ", params$personModulus, " = 0") else ""
 
   say("Database ", databaseId, " (", database$cdmDatabaseSchema, "): building populations in ", popQ)
-  exec(paste0("CREATE TABLE ", popQ, " (cohort_definition_id INT, subject_id BIGINT, cohort_start_date DATE, cohort_end_date DATE) USING DELTA"))
-  exec(paste0("CREATE TABLE ", hitsQ, " (rule_idx INT, cohort_definition_id INT, subject_id BIGINT) USING DELTA"))
+  exec(SqlRender::translate(paste0("CREATE TABLE ", popQ, " (cohort_definition_id INT, subject_id BIGINT, cohort_start_date DATE, cohort_end_date DATE);"), dbms))
+  exec(SqlRender::translate(paste0("CREATE TABLE ", hitsQ, " (rule_idx INT, cohort_definition_id INT, subject_id BIGINT);"), dbms))
 
   baseId <- 90L
   negativeBaseId <- 91L

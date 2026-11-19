@@ -67,7 +67,7 @@ SELECT concept_id,
        standard_concept
 FROM @vocab_schema.concept
 WHERE concept_id IN (@conceptIds)
-  AND (invalidReason IS NULL OR invalidReason = '')
+  AND (invalid_reason IS NULL OR invalid_reason = '')
 "
 
   sql <- SqlRender::render(
@@ -75,6 +75,7 @@ WHERE concept_id IN (@conceptIds)
     vocab_schema = database$cdmDatabaseSchema,
     conceptIds = paste(conceptIds, collapse = ",")
   )
+  sql <- SqlRender::translate(sql, targetDialect = database$connectionDetails$dbms)
 
   conn <- DatabaseConnector::connect(database$connectionDetails)
   on.exit(DatabaseConnector::disconnect(conn), add = TRUE)
@@ -126,6 +127,7 @@ ithGetConceptSet <- function(conceptName,
     "AND c.concept_class_id IN (", paste0("'", conceptClasses, "'", collapse = ","), ") ",
     "AND c.standard_concept = 'S'"
   )
+  sql <- SqlRender::translate(sql, targetDialect = database$connectionDetails$dbms)
 
   connection <- DatabaseConnector::connect(database$connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection), add = TRUE)

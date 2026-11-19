@@ -14,8 +14,9 @@ ithGetSubjectData <- function(subjectsToTest,
       cdm_schema = database$cdmDatabaseSchema,
       subjectId = subjectsToTest$subjectId[[subjectUp]],
       endDays = endDays,
-      startDate = paste0('"', subjectsToTest$cohortStartDate[[subjectUp]], '"')
+      startDate = paste0("CAST('", subjectsToTest$cohortStartDate[[subjectUp]], "' AS DATE)")
     )
+    sql <- SqlRender::translate(sql, targetDialect = database$connectionDetails$dbms)
 
     rows <- DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = TRUE)
     if (ncol(rows) >= 3) {
@@ -49,6 +50,7 @@ ithGetCohortSubjectData <- function(cohortsToTest,
     cohorts = cohortsToTest,
     endDays = endDays
   )
+  sql <- SqlRender::translate(sql, targetDialect = database$connectionDetails$dbms)
 
   DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = TRUE)
 }
@@ -82,6 +84,7 @@ ithGetSubjectDataSingle <- function(subjectsToTest,
     endDays = endDays,
     excludedConditionCode = excludedValues
   )
+  sql <- SqlRender::translate(sql, targetDialect = database$connectionDetails$dbms)
 
   rows <- DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = TRUE)
   rows$dayInStudy <- as.integer(rows$dayInStudy)
@@ -160,8 +163,9 @@ ithGetIngredients <- function(database,
   sql <- SqlRender::render(
     sqlQuery,
     cdm_schema = database$cdmDatabaseSchema,
-    conceptIds = paste(conceptList, collapse = ",")
+    conceptList = paste(conceptList, collapse = ",")
   )
+  sql <- SqlRender::translate(sql, targetDialect = database$connectionDetails$dbms)
 
   DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = TRUE)
 }

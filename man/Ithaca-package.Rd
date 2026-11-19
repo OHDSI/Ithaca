@@ -8,12 +8,12 @@
 \description{
 Internal package metadata and import declarations for Ithaca.
 }
-\author{
-\strong{Maintainer}: Ithaca Team \email{support@example.com}
-
-Authors:
+\seealso{
+Useful links:
 \itemize{
-  \item Ithaca Team \email{support@example.com}
+  \item \url{https://ohdsi.github.io/Ithaca}
+  \item \url{https://github.com/OHDSI/Ithaca}
+  \item Report bugs at \url{https://github.com/OHDSI/Ithaca/issues}
 }
 
 }

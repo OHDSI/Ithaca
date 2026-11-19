@@ -1,7 +1,7 @@
 Package: Ithaca
 Type: Package
 Title: Rubric Generation and Phenotype Scoring Workflow
-Version: 0.1.0
+Version: 0.1.1
 Author: Joel N. Swerdel
 Maintainer: Joel N. Swerdel <jswerdel@its.jnj.com>
 Description: Creates and edits rubric-driven phenotype evaluation logic,
