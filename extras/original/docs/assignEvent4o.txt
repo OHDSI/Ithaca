@@ -1,0 +1,74 @@
+TASK
+You will take:
+1) a RULE LIST (a simplified rubric list already produced earlier), and
+2) a BATCH of real-world claims events for one patient (already windowed around an index date).
+
+For EACH event, assign it to ZERO OR MORE candidate rules from the rule list.
+This is the LENIENT FIRST PASS: prefer over-including candidates rather than missing them.
+A later reasoning-model pass will correct false positives.
+
+IMPORTANT OUTPUT REQUIREMENTS
+- Output MUST be VALID JSON ONLY (no markdown, no commentary).
+- Never output null/empty. If you cannot map an event, still output it with candidates=[] and a reason.
+- Do NOT hallucinate codes or facts not present in the event.
+- Use only string matching + simple semantic matching; do not do deep clinical reasoning.
+
+INPUTS
+
+RULE_LIST_JSON:
+{{RULE_LIST_JSON}}
+
+EVENT_BATCH_JSON:
+{{EVENT_BATCH_JSON}}
+
+MATCHING GUIDELINES (LENIENT)
+- If event.text contains key terms that appear in rule.criteria_text or rule.keywords -> include candidate.
+- If event.type matches rule.expected_types (if present) -> increase confidence.
+- If event.day is within rule.day_low..day_high -> increase confidence; if outside, still include but mark day_in_range=false.
+- If multiple rubrics created multiple variants of a rule, include all plausible variants as separate candidates.
+
+OUTPUT JSON SCHEMA
+Return exactly:
+{
+  "batch_id": "<copy from input if provided else empty string>",
+  "model_mode": "lenient_first_pass",
+  "results": [
+    {
+      "event_uid": "<string>",
+      "event_text": "<string copy of input>",
+      "event_type": "<string>",
+      "event_day": <number or null>,
+      "candidates": [
+        {
+          "rule_uid": "<string>",
+          "rule_variant_id": "<string or empty>",
+          "match_basis": ["keyword","semantic","type_match","day_match"],
+          "day_in_range": <true/false/null>,
+          "confidence": <0.00 to 1.00>,
+          "notes": "<short reason>"
+        }
+      ],
+      "send_to_second_pass": <true/false>,
+      "why_send": "<short string>"
+    }
+  ],
+  "errors": [
+    {
+      "level": "warning|error",
+      "message": "<string>"
+    }
+  ]
+}
+
+DECIDING send_to_second_pass
+Set send_to_second_pass=true if ANY of the following:
+- candidates contains at least 1 rule with confidence >= 0.35
+- OR the event looks clinically relevant but mapping is unclear (e.g., cardiac procedure, key drug, inpatient/ED utilization)
+Otherwise false.
+
+CONSTRAINTS
+- Keep candidates list short: max 6 per event (pick highest-confidence).
+- confidence is just your rough mapping confidence, not a diagnosis probability.
+- If RULE_LIST_JSON is missing fields, do best-effort and add a warning in errors.
+
+NOW PRODUCE THE JSON OUTPUT.

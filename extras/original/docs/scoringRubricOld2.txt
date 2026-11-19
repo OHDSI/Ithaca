@@ -1,0 +1,194 @@
+You are building an OMOP CDM v5+ (Athena standard) phenotype rubric.
+
+Purpose:
+Validate whether a patient truly belongs in a cohort AFTER cohort assignment,
+using administrative claims data only.
+
+Phenotype to build rubric for:
+  <PHENOTYPE_NAME>
+
+This rubric will be used AFTER index condition diagnosis codes have been
+PERMANENTLY REMOVED from patient records. You must assume you will NEVER see
+the index condition diagnosis codes.
+
+Available data:
+- Condition codes (excluding index condition codes)
+- Procedure codes
+- Drug exposures
+- Dates of service
+- Care setting indicators (inpatient, outpatient, ED)
+- health items will be in text form only so include full text of health items in the rubric, not codes
+<INCLUDE_LABS>
+
+Unavailable data:
+- Imaging results
+- Clinical notes
+- Vitals
+<EXCLUDE_LABS>
+
+Time window:
+- Acute conditions: 60 days before index to 60 days after index
+- Chronic conditions: 180 days after index
+- Each health item provided will have an associated day relative to the index date
+
+Task:
+Produce a scoring rubric that determines whether the cohort label is
+supported by NON-INDEX evidence in the record.
+
+The rubric must output one of:
+- YES
+- NO
+- INSUFFICIENT EVIDENCE
+
+CRITICAL DESIGN PRINCIPLES (must obey):
+
+1) This is LABEL VALIDATION, not disease discovery.
+   The question is:
+   “Is the assigned phenotype label clinically plausible and internally
+    consistent given the remaining claims evidence?”
+
+2) Index condition diagnosis codes are NOT evidence.
+   They are labels and have already been removed.
+   Do not recreate them or rely on semantic inference of the diagnosis name.
+
+3) Evidence types must be explicitly categorized.
+   Prefer corroborating signals such as:
+   - disease-specific procedures
+   - disease-specific medications or supplies
+   - peri-index management
+   - post-index continuity of care
+
+4) Single-signal validation is NOT allowed.
+   A YES decision must require evidence from at least TWO DISTINCT
+   evidence categories (e.g., procedure + medication).
+
+5) Exclusion criteria MUST be explicitly modeled and evaluated BEFORE scoring.
+   Exclusions are NOT negative evidence.
+
+   There are two exclusion classes:
+   A) HARD EXCLUSIONS:
+      - Alternative explanations or situations that invalidate the label.
+      - If triggered → decision must be NO or INSUFFICIENT.
+   B) ALTERNATIVE EXPLANATIONS:
+      - Strong competing diagnoses or rule-out patterns.
+      - These apply penalties and/or cap the maximum possible decision.
+      - This should include an EXTENSIVE list of all differential diagnoses and the diagnosis pattern associated with the differential diagnosis.
+      - There should be large penalties for specific differential diagnoses patterns.
+      - Develop the rubrics that are very strict for differential diagnoses.
+
+6) Evaluation order MUST be:
+   (1) Hard exclusions
+   (2) Alternative explanations
+   (3) Positive evidence scoring
+   (4) Decision thresholds
+
+7) The rubric must be realistic for administrative claims
+   and avoid reliance on unavailable data.
+
+8) For evidence rules, you will need to cite conflict diagnoses, diagnoses other than <PHENOTYPE_NAME> that
+   also satisfies the evidence rule.  If this list is long, simply cite a category or categories of diseases that
+   may include the current condition and say "excluding <PHENOTYPE_NAME>".  You ONLY need to do this if <PHENOTYPE_NAME>
+   is specifically included in a disease category you cite.
+   For specialist visit rules, such as "Outpatient visit with dermatologist", conflict diagnoses should say
+   "any dermatolgical condition". if, using this example, <PHENOTYPE_NAME> happens to be a dermatolgical condition,
+   add: "except <PHENOTYPE_NAME>"
+   Example: acute myocardial infarction is in the cateogory of cardiovascular diseases and it should be excluded.
+   Ischemic stroke is not in the category of dermatology diseases and should not be excluded.
+   IMPORTANT:  this MUST be an extensive list for any rule that scores more than 1 point - BE EXTREMELY CAREFUL HERE!
+
+9) You will name administrative code concept sets that are required for each rule.  BE CAREFUL TO BE VERY INCLUSIVE!
+   The name should be VERY EXPLICIT so that you can use those named sets in the future to populate concepts into them.
+   Use _'s between words in the conceptset name for readability. ALWAYS spell out acronyms as this produce better clarity of the idea for the concept set.
+   If you include a visit type, always include that as a concept set in the list.
+   Example: for a criteria like: "≥2 outpatient OR 1 inpatient SLE diagnoses separated by ≥30 days", you need to
+   include a concept set for outpatient visits and one for inpatient visits, as well as SLE concepts.
+
+STRICT OUTPUT CONSTRAINT — READ CAREFULLY:
+Any field that violates explicit output constraints must be returned in its safest empty form rather than guessed or approximated.
+
+OUTPUT FORMAT:
+Give a JSON-structured summary for the following (DO NOT ADD ANY OTHER NON-JSON FORMATTED TEXT):
+
+{
+  "phenotype": "<name>",
+  "rubric_variation_name": "<name>",
+  "validation_goal": "claims-based label validation",
+  "subject_id": "personId from input data",
+
+  "assumptions": {
+    "index_condition_codes_removed": true,
+    "labs_unavailable": true
+  },
+
+  "decision_thresholds": {
+    "yes": X,
+    "no": Y,
+    "insufficient": "between Y and X or unmet constraints"
+  },
+
+  "hard_exclusions": [
+    {
+      "name": "...",
+      "criteria": "...",
+      "start_day": "...",
+      "end_day": "...",
+      "presence_or_absence": "...",
+      "occurrences_needed": "...",
+      "minimum_time_after_first_occurrence_days": "...",
+      "maximum_time_after_first_occurrence_days": "...",
+      "action": "force_no | force_insufficient",
+      "rationale": "...",
+      "concept_sets_needed": "names for sets of administrative code concepts that are required for this rule.  BE VERY INCLUSIVE. NO ACRONYMS IN NANES!"
+    }
+  ],
+
+  "alternative_explanations": [
+    {
+      "name": "...",
+      "criteria": "...",
+      "start_day": "...",
+      "end_day": "...",
+      "presence_or_absence": "...",
+      "occurrences_needed": "...",
+      "minimum_time_after_first_occurrence_days": "...",
+      "maximum_time_after_first_occurrence_days": "...",
+      "points": -X,
+      "cap_max_decision": "INSUFFICIENT | NO",
+      "rationale": "...",
+      "concept_sets_needed": "names for sets of administrative code concepts that are required for this rule.  BE VERY INCLUSIVE. NO ACRONYMS IN NANES!"
+    }
+  ],
+
+  "evidence_rules": [
+    {
+      "rule_id": "...",
+      "category": "peri_index | post_index | treatment | utilization | complications",
+      "tier": "strong | moderate | weak",
+      "points": X,
+      "criteria": "...",
+      "start_day": "...",
+      "end_day": "...",
+      "presence_or_absence": "...",
+      "occurrences_needed": "...",
+      "conflict_diagnoses": "comma-separated list of other conditions that may also apply to this criteria",
+      "minimum_time_after_first_occurrence_days": "...",
+      "maximum_time_after_first_occurrence_days": "...",
+      "notes": "...",
+      "concept_sets_needed": "names for sets of administrative code concepts that are required for this rule.  BE VERY INCLUSIVE. NO ACRONYMS IN NANES!"
+    }
+  ],
+
+  "explainability_requirements": {
+    "must_quote_record_items": true,
+    "must_list_points_by_rule": true,
+    "must_list_exclusions_checked": true
+  }
+}
+
+Specifics for this variation of the rubric:
+  <RUBRIC_SPECIFICS>
+
+Design the rubric to be conservative, stable under index-code removal,
+and suitable for fully automated use.
+
+

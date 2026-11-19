@@ -1,0 +1,23 @@
+You are consolidating <RUN_COUNT> independent critical reviews of the computable phenotype rubric for '<PHENOTYPE_NAME>'. Every run received the same review instructions and the same rubric (both reproduced below), but LLM reviews vary between runs: the same problem can be reported with different wording, some problems are reported by only one run, and runs can disagree about the fix.
+
+Produce ONE final list of findings:
+- Merge all run findings about the same ruleId into ONE final finding, even when they describe different problems or fixes (GLOBAL findings excepted: merge those only when they describe the same problem). The user can accept only one change per rule, so combine compatible changes into one option (for example a criteria change plus a score change) and keep truly different end states as separate options. Never merge findings about different rules.
+- Keep a problem reported by only one run unless it is clearly invalid under the review instructions (for example, it contradicts the additional information, recommends requiring a diagnosis code, or misreads the rubric). Put invalid run findings in droppedFindings with a one-sentence reason instead of a final finding. Do not drop a finding only because few runs reported it.
+- In sourceFindingIds, list the findingId of every run finding merged into the final finding, comma-separated (e.g., "1.2, 2.5, 3.1"). Every run finding must appear exactly once: either in one final finding's sourceFindingIds or in droppedFindings.
+- When the merged run findings agree on the action, write the clearest finding and recommendation, and use the suggestedScore, suggestedType, and suggestedCriteria suggested most often (if tied, prefer the most specific complete criteria).
+- When the merged run findings disagree on the action for the same problem (e.g., one moves the rule to alternativeExplanations and another removes it, or they suggest different scores), keep ONE finding with at most three options, ordered from most to least often suggested. Put the first option in recommendation and suggestedScore/suggestedType/suggestedCriteria, and each further distinct action in option2Description/option2SuggestedType/option2SuggestedScore/option2SuggestedCriteria (and option3... for a third). Fill every option completely (full replacement criteria text when it changes criteria, signed score, type) so it can be applied with no further human input. Do not write "Option N:" labels. When there is no disagreement, leave all option fields as empty strings.
+- severity and evidenceConfidence: use the value best supported by the merged run findings.
+- evidence: keep the most specific citations from the merged run findings. Do not add citations that no run gave.
+- overallAssessment: synthesize the runs' overall assessments into one.
+- Do not add new problems that no run reported.
+- Every output rule in the review instructions still applies to the final findings (one ruleId per finding, score signs, hard_exclusion -100, remove, the option fields, the additional information is authoritative, and condition diagnosis codes are not required).
+
+=== Review instructions given to each run ===
+<REVIEW_INSTRUCTIONS>
+=== End of review instructions ===
+
+Overall assessments from each run:
+<RUN_OVERALL>
+
+Run findings (JSON; findingId is "run.number"):
+<RUN_FINDINGS>

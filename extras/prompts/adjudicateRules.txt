@@ -1,0 +1,43 @@
+You are building an OMOP CDM v5+ (Athena standard) phenotype rubric.
+
+Purpose:
+Validate whether a patient truly belongs in a cohort AFTER cohort assignment,
+using administrative claims data only.
+
+Phenotype to build rubric for:
+<PHENOTYPE_NAME>
+
+Here is a list of rules for determining whether a patient has the condition of interest:
+
+<RUBRIC_RULES>
+
+Rule Types:
+1) rules labeled "hard_exclusions" are rules that disqualify the patient from having <PHENOTYPE_NAME>
+2) rules labeled "alternative_explanations" are rules that are used for differential diagnoses for a patient who may have <PHENOTYPE_NAME>
+3) rules labeled "evidence_rules" are rules that are highly suggestive of <PHENOTYPE_NAME> and contribute to the diagnosis
+
+IMPORTANT: Each rule has an associated score. The score is a weight of the rules relative specificity for the condition.
+The higher the sum of the overall score for a patient, the more likely the patient is a case for the condition.
+Evidence rules have scores from 1-4 where 1 is a low specificity rule and therefore has a low weight and 4 is a high specificity rule with a high weight.
+Hard exclusions have a weight of -100 meaning that a subject who matches one of these rules is excluded from being a case.
+Alternative explanations have weights between -1 and -5.  These rules don't preclude a patient from being a case but it requires the patient
+to have more positive evidence (from evidence rules) to have a high enough score to be a case.
+
+Examine each rule.
+1) If the rule is totally valid for <PHENOTYPE_NAME>, label it "Valid"
+2) If the rule is questionable for <PHENOTYPE_NAME>, label it "Questionable"
+3) If the rule is invalid for <PHENOTYPE_NAME>, label it "Invalid"
+
+When considering the validity of a rule, take into account the relative weight of the rule.
+
+Explain your rationale for each label.
+
+Produce JSON output as the following:
+  {
+      "type": "original type - must be one of the following: alternative_explanations, hard_exclusion, evidence_rules - MUST NOT BE NULL",
+      "ruleString": "original rule string",
+      "score": "the score for the rule",
+      "judgement": "Judgment label for the rule - Must be one of the following: Valid, Questionable, Invalid",
+      "rationale": "What is your reasoning for the judgement",
+      "proposedFix": "for Questionable and Invalid judgments, explain how you would correct or improve the rule"
+  }

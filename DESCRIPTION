@@ -1,0 +1,44 @@
+Package: Ithaca
+Type: Package
+Title: Rubric Generation and Phenotype Scoring Workflow
+Version: 0.1.0
+Author: Joel N. Swerdel
+Maintainer: Joel N. Swerdel <jswerdel@its.jnj.com>
+Description: Creates and edits rubric-driven phenotype evaluation logic,
+    builds OMOP-aligned SQL, manages concept set libraries, and scores
+    subjects across databases with cohort-generation integration.
+License: Apache License 2.0
+VignetteBuilder: knitr
+Depends:
+  R (>= 4.2.0)
+Encoding: UTF-8
+LazyData: true
+Imports:
+    codetools,
+    CohortGenerator,
+    data.table,
+    DatabaseConnector,
+    DBI,
+    dplyr,
+    duckdb,
+    ellmer,
+    Helios,
+    httr,
+    jsonlite,
+    Phenelope,
+    R6,
+    rlang,
+    ROhdsiWebApi,
+    SqlRender,
+    stringr,
+    yaml
+Suggests:
+    clipr,
+    Eunomia,
+    testthat (>= 3.2.0),
+    withr
+URL: https://ohdsi.github.io/Ithaca, https://github.com/OHDSI/Ithaca
+BugReports: https://github.com/OHDSI/Ithaca/issues
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.1.1

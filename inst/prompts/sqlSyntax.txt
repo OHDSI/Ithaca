@@ -1,0 +1,42 @@
+Here are the limitations for SQL Server syntax for our system.
+DO NOT USE SYNTAX OTHER THAN WHAT IS SHOWN BELOW!
+
+Here are allowed SQL Server functions to use:
+ABS	DATEFROMPARTS	LOG10	RTRIM
+ACOS	DATETIMEFROMPARTS	LOWER	SIN
+ASIN	DAY	LTRIM	SQRT
+ATAN	EOMONTH	MAX	SQUARE
+AVG	EXP	MIN	STDEV
+CAST	FLOOR	MONTH	SUM
+CEILING	GETDATE	NEWID	TAN
+CHARINDEX		PI	UPPER
+CONCAT	IIF	POWER	VAR
+COS	ISNULL	RAND	YEAR
+COUNT	ISNUMERIC	RANK	
+COUNT_BIG	LEFT	RIGHT	ABS
+DATEADD	LEN	ROUND	ACOS
+DATEDIFF	LOG	ROW_NUMBER	ASIN
+
+Here are allowed SQL Server syntax structures to use:
+SELECT * FROM table;                                        -- Simple selects
+SELECT * FROM table_1 INNER JOIN table_2 ON a = b;          -- Selects with joins 
+SELECT * FROM (SELECT * FROM table_1) tmp WHERE a = b;      -- Nested queries
+SELECT TOP 10 * FROM table;                                 -- Limiting to top rows
+SELECT * INTO new_table FROM table;                         -- Selecting into a new table
+CREATE TABLE table (field INT);                             -- Creating tables
+INSERT INTO other_table (field_1) VALUES (1);               -- Inserting verbatim values           
+INSERT INTO other_table (field_1) SELECT value FROM table;  -- Inserting from SELECT
+DROP TABLE my_table;                                        -- Simple drop commands
+DROP TABLE IF EXISTS ACHILLES_analysis;                     -- Drop table if it exists
+WITH cte AS (SELECT * FROM table) SELECT * FROM cte;        -- Common table expressions
+SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b)        -- OVER clauses
+  AS "Row Number" FROM table;
+SELECT CASE WHEN a=1 THEN a ELSE 0 END AS value FROM table; -- CASE WHEN clauses
+SELECT * FROM a UNION SELECT * FROM b                       -- UNIONs
+SELECT * FROM a INTERSECT SELECT * FROM b                   -- INTERSECTIONs
+SELECT * FROM a EXCEPT SELECT * FROM b                      -- EXCEPT
+CAST('20220101' AS DATE)                                    -- Cast to date
+
+String concatenation
+String concatenation is one area where SQL Server is less specific than other dialects. In SQL Server, one would write SELECT first_name + ' ' + last_name AS full_name FROM table, but this should be SELECT first_name || ' ' || last_name AS full_name FROM table in PostgreSQL and Oracle. SqlRender tries to guess when values that are being concatenated are strings. In the example above, because we have an explicit string (the space surrounded by single quotation marks), the translation will be correct. However, if the query had been SELECT first_name + last_name AS full_name FROM table, SqlRender would have had no clue the two fields were strings, and would incorrectly leave the plus sign. Another clue that a value is a string is an explicit cast to VARCHAR, so SELECT last_name + CAST(age AS VARCHAR(3)) AS full_name FROM table would also be translated correctly. To avoid ambiguity altogether, it is probable best to use the CONCAT() function to concatenate two or more strings.
+

@@ -1,0 +1,222 @@
+You are building an OMOP CDM v5+ (Athena standard) phenotype rubric.
+
+Purpose:
+Validate whether a patient truly belongs in a cohort AFTER cohort assignment,
+using administrative claims data only.
+
+Phenotype to build rubric for:
+  <PHENOTYPE_NAME>
+
+Additional information:
+  <ADDITIONAL_INFORMATION>
+
+Available data:
+- Condition codes
+- Procedure codes
+- Drug exposures
+- Dates of service
+- Care setting indicators (inpatient, outpatient, ED)
+- health items will be in text form only so include full text of health items in the rubric, not codes
+<INCLUDE_LABS>
+
+Unavailable data:
+- Imaging results
+- Clinical notes
+- Vitals
+- Drugs dispensed during a hospital admission
+- whether a diagnosis code is primary or secondary
+- Condition codes inferring disease severity
+<EXCLUDE_LABS>
+
+Time window:
+- Acute conditions: 60 days before index to 60 days after index
+- Chronic conditions: 60 days before index to up to 540 days after index
+- Each health item provided will have an associated day relative to the index date
+
+Task:
+Produce a scoring rubric that determines whether the cohort label is
+supported by evidence in the record.
+
+The rubric must output one of:
+- YES
+- NO
+- INSUFFICIENT EVIDENCE
+
+CRITICAL DESIGN PRINCIPLES (must obey):
+
+1) This is LABEL VALIDATION, not disease discovery.
+   The question is:
+   “Is the assigned phenotype label clinically plausible and internally
+    consistent given the remaining claims evidence?”
+
+2) Condition diagnosis codes are only moderate evidence.
+   Specifically include Condition diagnosis codes for <PHENOTYPE_NAME> in the rubric as per the following criteria:
+   <DX_CRITERA>
+   NOTE: If using diagnosis codes for the rubric is permitted, only use this criteria in ONE rule.
+
+3) Evidence types must be explicitly categorized.
+   Prefer corroborating signals such as:
+   - disease-specific procedures
+   - disease-specific medications or supplies
+   - peri-index management
+   - post-index continuity of care
+
+4) Single-signal validation is NOT allowed.
+   A YES decision must require evidence from at least TWO DISTINCT
+   evidence categories (e.g., procedure + medication).
+
+5) Exclusion criteria MUST be explicitly modeled and evaluated BEFORE scoring.
+   Exclusions are NOT negative evidence.
+
+   There are two exclusion classes:
+   A) HARD EXCLUSIONS:
+      - Alternative explanations or situations that invalidate the label.
+      - If triggered → decision must be NO or INSUFFICIENT.
+   B) ALTERNATIVE EXPLANATIONS:
+      - Strong competing diagnoses or rule-out patterns.
+      - These apply penalties and/or cap the maximum possible decision.
+      - This should include an EXTENSIVE list of all differential diagnoses and the diagnosis pattern associated with the differential diagnosis.
+      - There should be large penalties for specific differential diagnoses patterns.
+      - Develop the rubrics that are very strict for differential diagnoses.
+
+6) Evaluation order MUST be:
+   (1) Hard exclusions
+   (2) Alternative explanations
+   (3) Positive evidence scoring
+   (4) Decision thresholds
+
+7) The rubric must be realistic for administrative claims
+   and avoid reliance on unavailable data.
+
+8) You will name administrative code concept sets that are required for each rule.
+   BE CAREFUL TO BE VERY INCLUSIVE! Review each part of the rule criteria to ensure every part that needs a concept set is included.
+   a) VERY IMPORTANT: Including too many concept sets is MUCH better than including too few concept sets.
+   b) The name should be VERY EXPLICIT so that you can use those named sets in the future to populate concepts into them.
+    i) ALWAYS end concept sets for diagnosis codes with the words "DIAGNOSIS_CODES"
+    ii) ALWAYS end concept sets for procedure codes with the words "PROCEDURE_CODES"
+    iii) ALWAYS end concept sets for drug/medication codes with the words "MEDICATION_CODES"
+    iiii) ALWAYS end concept sets for visit codes with the words "VISIT_CODES"
+   c) Use _'s between words in the conceptset name for readability. ALWAYS spell out acronyms as this produce better clarity of the idea for the concept set.
+   d) If you include a visit type, always include that as a concept set in the list.
+    Example: for a criteria like: "≥2 outpatient OR 1 inpatient SLE diagnoses separated by ≥30 days", you need to
+    include a concept set for outpatient visits and one for inpatient visits, as well as SLE concepts.
+   e) If there are events to be excluded in the criteria, always include concept sets for the exclusions
+    Example: for the criteria "Diagnosis codes for hypoglycemia with coma OR complex migraine with aura OR seizure disorder without concurrent stroke treatment evidence" you need to include a concept set for stroke treatment evidence.
+
+9) NEVER refer to another rule or rules within a rule.  Example - never create a rule like:
+"Only transient ischemic attack diagnoses (TIA) WITHOUT any evidence rules satisfied after +30 days"
+
+10) In rules such as "≥2 diagnoses of interstitial cystitis WITHOUT any bladder-cancer-specific treatment codes" ALWAYS ensure that there is a
+concept_sets_needed entry for the exclusion part, in this example, "WITHOUT any bladder-cancer-specific treatment codes" needs to have an element in
+concept_sets_needed, in this example: bladder_cancer_specific_treatment_codes MUST be included in concept_sets_needed as well as any other concept_sets_needed.
+
+11) ALWAYS put specific date constraints for criteria involving the cohort_start_date (index date)
+      NEVER use an ambiguous criteria such as "Diagnosis of complex migraine with aura within window" - ALWAYS use a format similar to:
+      "Diagnosis of complex migraine with aura within -1 to +5 of the index date"
+      NOTE: -1 and +5 are example days - always use appropriate days for the specific criteria.
+
+12) IMPORTANT: EVERY criteria statement MUST have a date range around the index event (cohort_start_date).
+  Explicitly put in EVERY criteria statement the words "within N1 to N2 of index" where N1 is the start of the period and N2 is the end of the period.
+
+13) If there are multiple events, ensure that specific date constraints for criteria (labeled in the JSON as "criteria") include and are explicit for each event in the criteria.
+    Example: "Any severe sepsis or septic shock diagnosis within -1 to +5 of index
+              with antibiotic treatment within +1 to +5 of severe sepsis or septic shock diagnosis
+              without concurrent neutropenia-specific treatment within 0 to +7 of severe sepsis or septic shock diagnosis"
+
+STRICT OUTPUT CONSTRAINT — READ CAREFULLY:
+Any field that violates explicit output constraints must be returned in its safest empty form rather than guessed or approximated.
+ALWAYS return concept_sets_needed as comma separated strings.  NEVER separate with any other character
+
+OUTPUT FORMAT:
+Give a JSON-structured summary for the following (DO NOT ADD ANY OTHER NON-JSON FORMATTED TEXT):
+
+{
+  "phenotype": "<name>",
+  "rubric_variation_name": "<name>",
+  "rubric_id": "R1, R2, R3, ..., Rn",
+  "validation_goal": "claims-based label validation",
+  "subject_id": "personId from input data",
+
+  "assumptions": {
+    "index_condition_codes_removed": false,
+    "labs_unavailable": true
+  },
+
+  "decision_thresholds": {
+    "yes": X,
+    "no": Y,
+    "insufficient": "between Y and X or unmet constraints"
+  },
+
+  "hard_exclusions": [
+    {
+      "rule_id": "HE1, HE2, HE3, ..., HEn",
+      "rule_type": "hard_exclusions",
+      "criteria": "...",
+      "start_day": "...",
+      "end_day": "...",
+      "presence_or_absence": "...",
+      "occurrences_needed": "...",
+      "minimum_time_after_first_occurrence_days": "...",
+      "maximum_time_after_first_occurrence_days": "...",
+      "action": "force_no | force_insufficient",
+      "rationale": "...",
+      "concept_sets_needed": "names for sets of administrative code concepts that are required for this rule.  BE VERY INCLUSIVE. NO ACRONYMS IN NAMES!"
+    }
+  ],
+
+  "alternative_explanations": [
+    {
+      "rule_id": "AE1, AE2, AE3, ..., AEn",
+      "rule_type": "alternative_explanations",
+      "criteria": "...",
+      "start_day": "...",
+      "end_day": "...",
+      "presence_or_absence": "...",
+      "occurrences_needed": "...",
+      "minimum_time_after_first_occurrence_days": "...",
+      "maximum_time_after_first_occurrence_days": "...",
+      "points": -X,
+      "rationale_for_points": "what is the rationale for this point value in the overall point total?",
+      "cap_max_decision": "INSUFFICIENT | NO",
+      "rationale": "...",
+      "concept_sets_needed": "names for sets of administrative code concepts that are required for this rule.  BE VERY INCLUSIVE. NO ACRONYMS IN NAMES!"
+    }
+  ],
+
+  "evidence_rules": [
+    {
+      "rule_id": "ER1, ER2, ER3, ..., ERn",
+      "rule_type": "evidence_rules",
+      "category": "peri_index | post_index | treatment | utilization | complications",
+      "tier": "strong | moderate | weak",
+      "points": X,
+      "rationale_for_points": "what is the rationale for this point value in the overall point total?",
+      "criteria": "...",
+      "start_day": "...",
+      "end_day": "...",
+      "presence_or_absence": "...",
+      "occurrences_needed": "...",
+      "minimum_time_after_first_occurrence_days": "...",
+      "maximum_time_after_first_occurrence_days": "...",
+      "notes": "...",
+      "concept_sets_needed": "names for sets of administrative code concepts that are required for this rule.  BE VERY INCLUSIVE. NO ACRONYMS IN NAMES!"
+    }
+  ],
+
+  "explainability_requirements": {
+    "must_quote_record_items": true,
+    "must_list_points_by_rule": true,
+    "must_list_exclusions_checked": true
+  }
+}
+
+Specifics for this variation of the rubric:
+  <RUBRIC_SPECIFICS>
+
+Design the rubric to be conservative  and suitable for fully automated use.
+
+ENSURE that each criteria element (labeled in the JSON as "criteria") has specific time constraints, remembering the example from above:
+    Example: "Any severe sepsis or septic shock diagnosis within -1 to +5 of index
+              with antibiotic treatment within +1 to +5 of severe sepsis or septic shock diagnosis
+              without concurrent neutropenia-specific treatment within 0 to +7 of severe sepsis or septic shock diagnosis"

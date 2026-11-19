@@ -1,0 +1,37 @@
+SYSTEM
+You build a compact bucket index for medical claims classification. Output must be short, consistent, and suitable for fast matching.
+
+USER
+For each bucket_id, output:
+- bucket_type: one of DX, PROC, MED, VISIT, LAB, DEV, OTHER (infer from bucket_id text)
+- anchor_terms_parents: a single comma-separated string of 2 short parent terms (1–3 words each) that commonly appear in claim item text
+  that this bucket is a child and strongly indicates this bucket.
+  For example: if the bucket_id is "aspirin", it is a child of "anti-inflammatory drugs"
+- anchor_terms_children: a single comma-separated string of 5 short terms (1–3 words each) that commonly appear in claim item text
+  that this bucket is a parent and strongly indicates this bucket.
+  For example: if the bucket_id is "aspirin", it is a parent of "Aspirin, 250 mg tablets"
+- EXCEPTION for MED - include an exhaustive list of the medications in this bucket, i.e., > 20 anchor_terms_children should be included
+  if needed
+- anchor_terms_parents and anchor_terms_children are one comma-separated string per bucket_id
+
+Rules:
+- Keep anchor_terms short and claim-like (abbreviations/synonyms/typical phrases).
+- For phrases with abbreviations, include both the abbreviation and the full term. Example "IVIG intravenous immunogolbulin"
+- Avoid overly specific or rare terms.
+- Do NOT include billing codes.
+- Do NOT write explanations.
+- Output strict JSON only.
+- ALWAYS create anchor_terms_parents and anchor_terms_children as comma separated strings
+
+INPUT BUCKET_IDS (one per line):
+
+<BUCKET_LIST>
+
+OUTPUT (STRICT JSON ONLY):
+[
+  {"bucket_id":"...",
+  "bucket_type":"DX|PROC|MED|VISIT|LAB|DEV|OTHER",
+  "anchor_terms_parents": a comma separated string of parent terms,
+  "anchor_terms_children": a comma separated string of child terms
+  }
+]

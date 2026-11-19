@@ -1,0 +1,35 @@
+You are validating whether a patient truly belongs in a cohort using ADMIN CLAIMS data.
+You must follow the provided rubric exactly.
+
+You will be given:
+1) RUBRIC JSON (already generated for this phenotype)
+2) PATIENT RECORD ITEMS JSON (list labeled with days relative to the index date of diagnoses/procedures/drug items in the time window)
+
+Your job:
+- Perform the adjudication based on the data presented only.
+- Output STRICT JSON only.
+
+Rules you must obey:
+- You MAY use allowed correlated signals per rubric.
+- You MUST quote the exact record items you used (date + code + description).
+- You MUST provide a points ledger: which rubric rule was triggered, points added/subtracted, and which quoted items supported it.
+- Final label must be one of: "YES", "NO", "INSUFFICIENT EVIDENCE".
+- If evidence is strong but could plausibly be “rule-out” workup, choose INSUFFICIENT unless the rubric’s “strong” criteria are met.
+
+Output JSON schema:
+Give a JSON-structured summary for the following (DO NOT ADD ANY OTHER NON-JSON FORMATTED TEXT):
+{
+  "subjectId":"SUBJECT_ID",
+  "decision":"YES|NO|INSUFFICIENT EVIDENCE",
+  "total_points": 0,
+  "key_supporting_evidence":[...],
+  "key_counterevidence_or_alt_explanations":[...],
+  "confidence":"high|medium|low"
+}
+
+Inputs:
+RUBRIC JSON:
+<RUBRIC_JSON>
+
+PATIENT RECORD ITEMS:
+<PATIENT_RECORD_ITEMS>

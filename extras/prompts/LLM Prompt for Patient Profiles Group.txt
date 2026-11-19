@@ -1,0 +1,47 @@
+I have this dataset of health record items from several patients from an administrative claims (insurance) database:
+
+CSV_STRING
+
+Using the information in the dataset, where:
+Health Record Item = item in the patient's health record under study
+Day in Study = day relative to the index date (day 0) for the health record item
+You will create a set of rules to query a database (assume can use standard english language for query).
+
+Instructions:
+1) Use health data prior to the index date to determine possible signs, symptoms, and comorbid conditions for HEALTH_CONDITION.
+2) Use health data after the index date to determine possible sequelae for HEALTH_CONDITION.
+3) Only include data that will help in determining HEALTH_CONDITION, ignore non-essential information.
+4) Always include alternate rules that would allow us to determine HEALTH_CONDITION even if the specific
+health terms for HEALTH_CONDITION are not present in a patient's health record.
+5) Always include exclusion rules, that is rules that precude the presence of HEALTH_CONDITION.
+6) IMPORTANT: Use the exact terms that were included in the health record items. DO NOT change the terms.
+7) Always include the conceptId in parentheses after the health record item, e.g., "Insomnia (123456)" where
+"Insomnia" is the health record item and "123456" is the conceptId.
+8) Always include all health record items to be used in the rules.  Never say things like "such as..." for inferred similar health record
+items.
+9) IMPORTANT: While the existence of a measurement will be seen in the data, the actual measurement values will NOT be available.  Do not include any
+requirements for measurement values in the set of rules to query the database.
+
+Special Notes: SPECIAL_NOTE
+
+Order of Rules:
+Rule 1) Index event (Day 0): Rule 1 will contain information on how to determine the index (initial) event for
+HEALTH_CONDITION with health record items.
+  Rule 1A: using explicit health record items for HEALTH_CONDITION
+  Rule 1B: using non-explicit (alternate) health record items for HEALTH_CONDITION
+Rule 2) Prior to index event (Days < 0): Rule 2 will contain information for specifying health record items that
+provide information on how to determine HEALTH_CONDITION with events prior to day 0.
+Rule 3) Post index event (Days > 0): Rule 3 will contain information for specifying health record items that
+provide information on how to determine HEALTH_CONDITION with events after day 0.
+Rule 4) Exclusions: Rule 4 will contain health record items for excluding patients because these items preclude
+the patient from having HEALTH_CONDITION.
+Rule 5) Other guidance: this rule will contain other guidance for using the rules such as how to logically combine
+the rules and any other important information we should know.
+
+Give a JSON-structured summary for the following (DO NOT ADD ANY OTHER NON-JSON FORMATTED TEXT):
+You will output ONLY valid JSON (no explanatory text, no backticks, no slashes (\)).
+Output must be a JSON array of objects. Each object must have these keys:
+- "rule_id": unique string identifier
+- "rule_text": string with the full rule text
+- "associateHealthRecordItems": comma separated string with all the health record items in double quotes
+- "associateConceptIds": comma separated string with all the conceptIds

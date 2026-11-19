@@ -1,0 +1,602 @@
+You are building an OMOP CDM v5+ (Athena standard) phenotype rubric.
+
+Purpose:
+Validate whether a patient truly belongs in a cohort AFTER cohort assignment, using administrative claims data only.
+
+Phenotype to build rubric for:
+  <PHENOTYPE_NAME>
+
+Additional information:
+  <ADDITIONAL_INFORMATION>
+
+Available data:
+- Condition codes
+- Procedure codes
+- Drug exposures
+- Dates of service
+- Care setting indicators (inpatient, outpatient, ED)
+- Health items will be in text form only so include full text of health items
+  in the rubric, not codes
+<INCLUDE_LABS>
+
+Unavailable data:
+- Imaging results
+- Clinical notes
+- Vitals
+- Drugs dispensed during a hospital admission
+- Whether a diagnosis code is primary or secondary
+- Condition codes inferring disease severity <EXCLUDE_LABS>
+
+Time window:
+- Acute conditions: 60 days before index to 60 days after index
+- Chronic conditions: 60 days before index to up to 540 days after index
+- Each health item provided will have an associated day relative to the index date
+
+Task:
+Produce ONE comprehensive scoring rubric that determines whether the cohort label is supported by evidence in the record.
+
+The rubric must output one of:
+- YES
+- NO
+- INSUFFICIENT EVIDENCE
+
+
+CRITICAL DESIGN PRINCIPLES (must obey):
+
+1) This is LABEL VALIDATION, not disease discovery.
+
+   The question is:
+   \"Is the assigned phenotype label clinically plausible and internally
+   consistent given the remaining claims evidence?\"
+
+
+2) Condition diagnosis codes are only moderate evidence.
+
+   Specifically include Condition diagnosis codes for <PHENOTYPE_NAME> in the
+   rubric as per the following criteria:
+
+   <DX_CRITERA>
+
+   NOTE:
+   If using diagnosis codes for the rubric is permitted, only use this criteria
+   in ONE evidence rule.
+
+   Diagnosis codes for the phenotype must never independently establish YES.
+
+
+3) Evidence types must be explicitly categorized.
+
+   Evidence rules must use the following categories:
+   - peri_index
+   - post_index
+   - treatment
+   - utilization
+   - complications
+
+   This is the SINGLE COMPREHENSIVE rubric that will be used for automated
+   phenotype validation.
+
+   Generate multiple independent evidence rules within EACH clinically applicable
+   category rather than one representative rule per category.
+
+   Because there is only ONE rubric, it must contain broad clinical coverage and
+   substantially more rules than would be appropriate for one member of a
+   multi-rubric ensemble.
+
+   Prefer corroborating signals such as:
+   - disease-specific procedures
+   - disease-specific medications or supplies
+   - medication initiation
+   - medication persistence or refill continuity
+   - combination therapy
+   - treatment escalation or step-up therapy
+   - peri-index management
+   - post-index continuity of care
+   - specialty-care patterns
+   - disease-relevant utilization
+   - disease-consistent complications and their management
+
+   Do not artificially limit the number of evidence rules for brevity.
+
+   Include additional rules whenever they capture clinically distinct and
+   independently evaluable evidence.
+
+
+4) Single-signal validation is NOT allowed.
+
+   A YES decision must require evidence from at least TWO DISTINCT evidence
+   categories.
+
+   Multiple rules from the SAME category do NOT satisfy this requirement.
+
+   Examples:
+   - Three medication/treatment rules alone cannot establish YES.
+   - Two utilization/procedure rules alone cannot establish YES.
+   - Medication + utilization may satisfy the cross-category requirement if the
+     overall scoring threshold and all other constraints are also satisfied.
+
+   Whenever clinically appropriate, favor YES decisions supported by more than
+   two independent signals, while retaining the minimum requirement of two
+   distinct categories.
+
+   Closely related manifestations of the same underlying event should not be
+   treated as independent corroboration merely because they are represented by
+   different administrative codes.
+
+
+5) Exclusion criteria MUST be explicitly modeled and evaluated BEFORE scoring.
+
+   Exclusions are NOT negative evidence.
+
+   There are two exclusion classes:
+
+   A) HARD EXCLUSIONS:
+
+      - Alternative situations or contexts that invalidate the assigned label or
+        make reliable validation impossible.
+
+      - If triggered, the decision must be NO or INSUFFICIENT EVIDENCE.
+
+      - Hard exclusions should be used sparingly and should require high-confidence
+        evidence.
+
+      - Do not use a hard exclusion merely because another diagnosis is possible.
+
+
+   B) ALTERNATIVE EXPLANATIONS:
+
+      - Strong competing diagnoses, competing etiologies, alternative treatment
+        indications, and rule-out patterns.
+
+      - These apply penalties and/or cap the maximum possible decision.
+
+      - Generate an EXTENSIVE and COMPREHENSIVE set of alternative-explanation
+        rules.
+
+      - Do NOT restrict this section to only the most common two or three
+        differential diagnoses.
+
+      - Consider all major clinically plausible differential diagnoses that could
+        produce the observed claims pattern.
+
+      - Consider alternative indications for medications, procedures, utilization
+        patterns, and complication patterns used as positive evidence elsewhere
+        in the rubric.
+
+      - When clinically appropriate, create SEPARATE rules for distinct competing
+        explanations rather than combining many unrelated differential diagnoses
+        into one broad rule.
+
+      - Include the diagnosis, treatment, procedure, utilization, or temporal
+        pattern that makes each differential diagnosis a credible competing
+        explanation.
+
+      - Use large penalties and/or decision caps for highly specific competing
+        patterns.
+
+      - Differential-diagnosis rules should be strict enough that merely having a
+        diagnosis code for a possible alternative condition does NOT automatically
+        negate otherwise coherent phenotype evidence.
+
+      - A large penalty should generally require a coherent competing pattern,
+        not merely an isolated competing diagnosis code.
+
+
+6) Evaluation order MUST be:
+
+   (1) Hard exclusions
+   (2) Alternative explanations
+   (3) Positive evidence scoring
+   (4) Cross-category requirements
+   (5) Decision thresholds and decision caps
+
+
+7) The rubric must be realistic for administrative claims and avoid reliance on
+   unavailable data.
+
+   Never create criteria requiring:
+   - clinical-note interpretation
+   - imaging findings
+   - vital signs
+   - inpatient medication administration
+   - primary-versus-secondary diagnosis position
+   - disease severity inferred solely from diagnosis codes
+   - information otherwise listed as unavailable
+
+
+8) You will name administrative code concept sets that are required for each rule.
+
+   BE CAREFUL TO BE VERY INCLUSIVE.
+
+   Review each part of every rule criteria statement to ensure every component
+   requiring administrative codes has a corresponding concept set.
+
+   a) VERY IMPORTANT:
+      Including too many concept sets is MUCH better than including too few
+      concept sets.
+
+   b) Concept-set names must be VERY EXPLICIT so they can later be used to populate
+      OMOP/Athena concepts.
+
+      ALWAYS end concept sets for diagnosis codes with:
+      \"DIAGNOSIS_CODES\"
+
+      ALWAYS end concept sets for procedure codes with:
+      \"PROCEDURE_CODES\"
+
+      ALWAYS end concept sets for drug or medication codes with:
+      \"MEDICATION_CODES\"
+
+      ALWAYS end concept sets for visit codes with:
+      \"VISIT_CODES\"
+
+   c) Use underscores between words in the concept-set name for readability.
+
+   d) ALWAYS spell out acronyms in concept-set names because this produces better
+      clarity.
+
+   e) If you include a visit type in criteria, ALWAYS include that visit type as a
+      concept set.
+
+      Example:
+
+      For:
+      \">=2 outpatient OR 1 inpatient systemic lupus erythematosus diagnoses
+      within -60 to +180 of index, with the repeated outpatient diagnoses
+      separated by >=30 days\"
+
+      include concept sets for:
+      - outpatient visits
+      - inpatient visits
+      - systemic lupus erythematosus diagnosis codes
+
+   f) If there are events to be excluded within a criteria statement, ALWAYS
+      include concept sets for those exclusion events.
+
+      Example:
+
+      For:
+      \"Diagnosis codes for hypoglycemia with coma OR complex migraine with aura
+      OR seizure disorder within -1 to +5 of index, without concurrent
+      stroke-specific treatment within -1 to +5 of index\"
+
+      include a concept set for stroke-specific treatment evidence as well as
+      concept sets for the competing diagnoses.
+
+
+9) NEVER refer to another rule or rules within a rule.
+
+   Each rule must be independently evaluable.
+
+   Never create criteria such as:
+   \"Only transient ischemic attack diagnoses WITHOUT any evidence rules
+   satisfied after +30 days.\"
+
+   Instead, explicitly specify the actual health events required or absent within
+   the rule itself.
+
+
+10) When a rule contains an explicit absence condition, ALWAYS ensure that the
+    corresponding excluded event has a concept_sets_needed entry.
+
+    Example:
+
+    For:
+    \">=2 diagnoses of interstitial cystitis within -60 to +180 of index
+    WITHOUT any bladder-cancer-specific treatment within -60 to +180 of index\"
+
+    concept_sets_needed must include BOTH:
+    - the interstitial cystitis diagnosis concept set
+    - the bladder cancer treatment concept set
+
+
+11) ALWAYS put specific date constraints in criteria involving the
+    cohort_start_date / index date.
+
+    NEVER use an ambiguous criteria such as:
+
+    \"Diagnosis of complex migraine with aura within window.\"
+
+    ALWAYS use an explicit format such as:
+
+    \"Diagnosis of complex migraine with aura within -1 to +5 of index.\"
+
+    The exact days must be chosen appropriately for the clinical scenario.
+
+
+12) EVERY criteria statement MUST contain an explicit date range around the
+    index event.
+
+    Explicitly include the phrase:
+
+    \"within N1 to N2 of index\"
+
+    where N1 is the start of the period and N2 is the end of the period.
+
+    This requirement applies to:
+    - hard exclusions
+    - alternative explanations
+    - evidence rules
+
+
+13) If there are multiple events in one criteria statement, the timing of EACH
+    event must be explicit.
+
+    Example:
+
+    \"Any severe sepsis or septic shock diagnosis within -1 to +5 of index
+    with antibiotic treatment within +1 to +5 days of the severe sepsis or
+    septic shock diagnosis
+    without concurrent neutropenia-specific treatment within 0 to +7 days of
+    the severe sepsis or septic shock diagnosis.\"
+
+    When timing is relative to an event other than index, clearly specify that
+    relationship in the criteria while still giving the overall applicable
+    index-relative period.
+
+
+14) RULE COMPREHENSIVENESS:
+
+    Only ONE rubric will be generated and used for automated adjudication.
+
+    Therefore, this rubric must provide comprehensive coverage of the phenotype
+    and must not rely on other rubric variations to capture missing evidence.
+
+    DO NOT minimize the number of rules for conciseness.
+
+    Generate as many independently evaluable rules as are clinically useful to
+    represent distinct:
+
+    - peri-index management patterns
+    - post-index continuity patterns
+    - medications and treatment trajectories
+    - procedures and interventions
+    - utilization patterns
+    - complication-management patterns
+    - phenotype diagnosis patterns, if permitted
+    - hard exclusions
+    - differential diagnoses
+    - competing etiologies
+    - alternative indications for medications
+    - alternative indications for procedures
+    - rule-out patterns
+    - transient mimics
+
+    Prefer multiple simple, explicit rules over a small number of highly complex
+    rules containing many unrelated OR conditions.
+
+    Do not create redundant rules representing essentially the same clinical
+    signal.
+
+    Each rule should represent a clinically meaningful and independently
+    evaluable claims pattern.
+
+
+15) RULE INDEPENDENCE AND DOUBLE-COUNTING:
+
+    Avoid creating multiple evidence rules that would routinely trigger from the
+    exact same clinical event and thereby artificially inflate a patient's score.
+
+    If two rules capture different aspects of the same underlying pattern, make
+    their criteria sufficiently distinct so that satisfying both represents
+    genuinely additional evidence.
+
+    Repeated claims generated by one encounter should not automatically count as
+    multiple independent clinical signals unless the rule explicitly requires and
+    clinically justifies that pattern.
+
+
+16) POINT VALUES AND TIERS:
+
+    Assign point values proportional to the specificity and clinical relevance of
+    each evidence pattern.
+
+    In general:
+    - strong rules should receive the highest positive point values
+    - moderate rules should receive intermediate positive point values
+    - weak rules should receive smaller positive point values
+
+    Do not allow numerous weak rules to overwhelm the absence of strong,
+    corroborating evidence.
+
+    Alternative-explanation penalties should reflect how strongly the competing
+    pattern undermines the assigned phenotype.
+
+    The point scale and YES/NO thresholds must be internally consistent within
+    the rubric.
+
+
+17) MULTIPLE PATHWAYS TO VALIDATION:
+
+    When clinically appropriate, create multiple legitimate pathways by which a
+    true patient could satisfy the rubric.
+
+    Do not assume every patient with the phenotype receives the same medication,
+    procedure, specialty care, treatment escalation, or site of care.
+
+    Include alternative accepted management pathways when they can be detected
+    using the available claims data.
+
+    This requirement is especially important for chronic phenotypes and
+    phenotypes with heterogeneous treatment strategies.
+
+
+18) AUTOMATED IMPLEMENTATION:
+
+    Every rule must be sufficiently explicit to be translated later into
+    deterministic R logic.
+
+    Avoid vague terms such as:
+    - frequent
+    - persistent
+    - shortly after
+    - around index
+    - recurrent
+    - substantial
+    - prolonged
+
+    unless the criteria also provide explicit numeric definitions.
+
+    For example, instead of:
+    \"frequent specialist visits after index\"
+
+    use:
+    \">=3 specialty outpatient visits within +30 to +180 of index, with visits
+    occurring on >=2 distinct service dates and with >=30 days between the first
+    and last qualifying visit.\"
+
+    Whenever possible, express:
+    - number of occurrences
+    - date range
+    - spacing requirements
+    - presence or absence requirements
+    explicitly.
+
+
+STRICT OUTPUT CONSTRAINT — READ CAREFULLY:
+
+Any field that violates explicit output constraints must be returned in its safest empty form rather than guessed or approximated.
+
+ALWAYS return concept_sets_needed as comma-separated strings.
+ALWAYS format individual concept_sets_needed with _'s between words in the string.
+  Example: antiplatelet medications should be saved in the concept_sets_needed as antiplatelet_medications
+
+NEVER separate concept_sets_needed values with:
+- semicolons
+- pipes
+- slashes
+- JSON arrays
+- any delimiter other than commas
+
+Do not return duplicate concept-set names within a single concept_sets_needed field.
+
+Do not add explanatory prose outside the JSON object.
+
+
+OUTPUT FORMAT:
+
+Give a JSON-structured summary for the following.
+
+DO NOT ADD ANY OTHER NON-JSON FORMATTED TEXT.
+
+{
+  \"phenotype\": \"<name>\",
+  \"rubric_variation_name\": \"<name>\",
+  \"rubric_id\": \"R1\",
+  \"validation_goal\": \"claims-based label validation\",
+  \"subject_id\": \"personId from input data\",
+
+  \"assumptions\": {
+    \"index_condition_codes_removed\": false,
+    \"labs_unavailable\": true
+  },
+
+  \"decision_thresholds\": {
+    \"yes\": X,
+    \"no\": Y,
+    \"minimum_distinct_evidence_categories_for_yes\": 2,
+    \"strong_evidence_required_for_yes\": true,
+    \"insufficient\": \"between Y and X or unmet YES constraints\"
+  },
+
+  \"hard_exclusions\": [
+    {
+      \"rule_id\": \"HE1, HE2, HE3, ..., HEn\",
+      \"rule_type\": \"hard_exclusions\",
+      \"criteria\": \"...\",
+      \"start_day\": \"...\",
+      \"end_day\": \"...\",
+      \"presence_or_absence\": \"...\",
+      \"occurrences_needed\": \"...\",
+      \"minimum_time_after_first_occurrence_days\": \"...\",
+      \"maximum_time_after_first_occurrence_days\": \"...\",
+      \"action\": \"force_no | force_insufficient\",
+      \"rationale\": \"...\",
+      \"concept_sets_needed\": \"names for sets of administrative code concepts that are required for this rule. BE VERY INCLUSIVE. NO ACRONYMS IN NAMES!\"
+    }
+  ],
+
+  \"alternative_explanations\": [
+    {
+      \"rule_id\": \"AE1, AE2, AE3, ..., AEn\",
+      \"rule_type\": \"alternative_explanations\",
+      \"criteria\": \"...\",
+      \"start_day\": \"...\",
+      \"end_day\": \"...\",
+      \"presence_or_absence\": \"...\",
+      \"occurrences_needed\": \"...\",
+      \"minimum_time_after_first_occurrence_days\": \"...\",
+      \"maximum_time_after_first_occurrence_days\": \"...\",
+      \"points\": -X,
+      \"rationale_for_points\": \"what is the rationale for this point value in the overall point total?\",
+      \"cap_max_decision\": \"INSUFFICIENT | NO\",
+      \"rationale\": \"...\",
+      \"concept_sets_needed\": \"names for sets of administrative code concepts that are required for this rule. BE VERY INCLUSIVE. NO ACRONYMS IN NAMES!\"
+    }
+  ],
+
+  \"evidence_rules\": [
+    {
+      \"rule_id\": \"ER1, ER2, ER3, ..., ERn\",
+      \"rule_type\": \"evidence_rules\",
+      \"category\": \"peri_index | post_index | treatment | utilization | complications\",
+      \"tier\": \"strong | moderate | weak\",
+      \"points\": X,
+      \"rationale_for_points\": \"what is the rationale for this point value in the overall point total?\",
+      \"criteria\": \"...\",
+      \"start_day\": \"...\",
+      \"end_day\": \"...\",
+      \"presence_or_absence\": \"...\",
+      \"occurrences_needed\": \"...\",
+      \"minimum_time_after_first_occurrence_days\": \"...\",
+      \"maximum_time_after_first_occurrence_days\": \"...\",
+      \"notes\": \"...\",
+      \"concept_sets_needed\": \"names for sets of administrative code concepts that are required for this rule. BE VERY INCLUSIVE. NO ACRONYMS IN NAMES!\"
+    }
+  ],
+
+  \"explainability_requirements\": {
+    \"must_quote_record_items\": true,
+    \"must_list_points_by_rule\": true,
+    \"must_list_exclusions_checked\": true
+  }
+}
+
+
+Specifics for this comprehensive rubric:
+
+<RUBRIC_SPECIFICS>
+
+
+Design ONE comprehensive rubric that is conservative, clinically coherent, and suitable for fully automated use.
+
+IMPORTANT:
+
+This rubric will be used independently. There are NO other rubric variations available to compensate for missing evidence.
+
+Therefore, comprehensiveness means generating MORE independently evaluable rules covering all clinically important claims-observable patterns.
+
+It does NOT mean making individual rules excessively complex.
+
+The rubric must incorporate:
+- high-specificity evidence
+- peri-index clinical management
+- longitudinal continuity
+- medication and treatment trajectories
+- utilization and procedural signatures
+- downstream complications
+- multiple legitimate clinical pathways
+- extensive differential diagnoses
+- competing etiologies
+- alternative treatment indications
+- explicit hard exclusions where justified
+
+The final scoring system must require cross-category corroboration and must prevent a large number of weak or redundant signals from producing a false YES.
+
+ENSURE that every criteria element labeled \"criteria\" has explicit time constraints.
+
+Every criteria statement must contain explicit index-relative timing, and every additional event within a multi-event rule must also have explicit timing.
+
+Example:
+
+\"Any severe sepsis or septic shock diagnosis within -1 to +5 of index with antibiotic treatment within +1 to +5 days of severe sepsis or septic shock diagnosis without concurrent neutropenia-specific treatment within 0 to +7 days of severe sepsis or septic shock diagnosis.\"

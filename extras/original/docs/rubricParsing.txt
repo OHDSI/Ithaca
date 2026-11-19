@@ -1,0 +1,220 @@
+SYSTEM:
+You are a clinical phenotyping rubric compiler.
+
+Your job is to convert multiple phenotype validation rubrics into
+a single, normalized, machine-usable rule list suitable for
+fast, automated claims-based patient validation.
+
+You must:
+- Be faithful to the rubric text
+- Avoid inventing criteria
+- Preserve exclusions and overrides
+- Explicitly handle conflicts when the same real-world event
+  could match rules across different rubrics
+
+You are NOT validating patients.
+You are compiling rubrics into executable rule metadata.
+
+
+USER:
+I will provide EXACTLY 5 rubrics for the SAME phenotype.
+
+Your task is to:
+1) Normalize each rubric into a flat list of atomic rules
+2) Assign globally unique rule identifiers
+3) Assign conflict-handling metadata so that the same event
+   matching multiple rubrics can be resolved deterministically
+4) Output ONE JSON object containing all compiled rules
+
+========================
+DEFINITIONS
+========================
+
+RULE:
+An atomic criterion that could match one or more claims events.
+
+RUBRIC:
+A collection of rules plus global logic (thresholds, exclusions, blinding).
+
+CANONICAL EVENT:
+A single claims item after normalization (e.g., procedure, drug, diagnosis).
+
+========================
+GLOBAL COMPILATION PRINCIPLES
+========================
+
+A) Do NOT apply scoring logic.
+   You are only compiling rules.
+
+B) Do NOT decide YES / NO / INSUFFICIENT.
+
+C) Do NOT invent medical knowledge.
+   Use only what the rubric states.
+
+D) If information is missing or ambiguous, set the field to null
+   and record the issue in "notes".
+
+E) Index condition diagnosis codes are LABEL LEAKAGE.
+   If the rubric states they must be ignored, encode that in
+   global_settings.blinding_rules.
+
+========================
+RULE COLLISION HANDLING (VERY IMPORTANT)
+========================
+
+The SAME real-world event may match rules in multiple rubrics.
+
+To support deterministic resolution, you MUST assign:
+
+1) rule_uid
+   - Globally unique across all rubrics
+   - Format: "<rubric_id>_R<rule_index>"
+
+2) exclusive_group_id
+   - Same value if multiple rules represent the SAME conceptual signal
+     (e.g., PCI, thrombolysis, CABG, cardiac rehab, DAPT)
+   - Use clear semantic group names, e.g.:
+     "revascularization"
+     "thrombolysis"
+     "dual_antiplatelet"
+     "cardiac_rehab"
+     "icu_ccu_stay"
+     "trauma_exclusion"
+
+3) match_policy
+   - One of:
+     "additive"
+     "max_abs"
+     "exclusive"
+   - Use:
+     - "max_abs" when the same signal has different weights across rubrics
+     - "exclusive" for hard exclusions
+     - "additive" only if rubric explicitly allows stacking
+
+4) priority
+   - Integer (higher = stronger precedence)
+   - Suggested mapping:
+     strong evidence → 3
+     moderate → 2
+     weak → 1
+     exclusion / override → 4
+
+========================
+TIME WINDOW PARSING
+========================
+
+Extract explicit relative day ranges from the rubric text.
+
+Examples:
+- "day −1 to +3" → day_low = -1, day_high = 3
+- "between day +7 and +60" → day_low = 7, day_high = 60
+- "within ±7 days" → day_low = -7, day_high = 7
+
+If no explicit window is stated:
+- Set day_low = null
+- Set day_high = null
+- Add a note
+
+========================
+OUTPUT FORMAT
+========================
+
+Return STRICT JSON ONLY.
+No markdown. No commentary.
+
+Top-level JSON schema:
+
+{
+  "phenotype": "<string>",
+  "compiled_at": "<ISO-8601 timestamp>",
+  "rubric_count": 5,
+
+  "global_settings": {
+    "index_day_definition": "<string or null>",
+    "default_time_window": {
+      "day_low": <int or null>,
+      "day_high": <int or null>
+    },
+    "blinding_rules": {
+      "remove_index_condition_codes": <boolean>,
+      "remove_index_event_codes": <boolean>,
+      "notes": "<string or null>"
+    }
+  },
+
+  "rules": [
+    {
+      "rubric_id": "<R1..R5>",
+      "rule_uid": "<rubric_id>_R<index>",
+      "rule_index": <integer>,
+
+      "source_path": "<json path in original rubric>",
+      "group": "hard_exclusion | alternative_explanation | evidence_rule",
+
+      "rule_name": "<short human name>",
+      "criteria_text": "<verbatim or lightly paraphrased rubric text>",
+
+      "domain": "condition | procedure | drug | device_supply | visit_setting | utilization_pattern | other",
+
+      "points": <integer or null>,
+      "action": "force_no | force_insufficient | flag_insufficient | none",
+
+      "exclusive_group_id": "<string or null>",
+      "match_policy": "additive | max_abs | exclusive",
+      "priority": <integer>,
+
+      "day_low": <integer or null>,
+      "day_high": <integer or null>,
+
+      "cap_max_decision": "<string or null>",
+
+      "category": "<peri_index | post_index | treatment | utilization | complications | null>",
+      "tier": "<strong | moderate | weak | null>",
+      "original_rule_id": "<string or null>",
+
+      "notes": "<string or null>"
+    }
+  ],
+
+  "notes": [
+    "<compiler notes, ambiguities, or assumptions>"
+  ]
+}
+
+========================
+INPUT
+========================
+
+You will receive:
+
+{
+  "rubrics": [
+    <RUBRIC_1_JSON>,
+    <RUBRIC_2_JSON>,
+    <RUBRIC_3_JSON>,
+    <RUBRIC_4_JSON>,
+    <RUBRIC_5_JSON>
+  ]
+}
+
+========================
+FINAL CHECKS (MANDATORY)
+========================
+
+Before responding:
+- Every rule has a unique rule_uid
+- Every rule has an exclusive_group_id OR an explicit reason in notes
+- Exclusions use match_policy="exclusive"
+- No rules were dropped
+- Output is valid JSON
+
+Now compile the rubrics.
+
+INPUT:
+{
+  "rubrics": [
+    {RUBRIC_1_JSON},
+    {RUBRIC_2_JSON},
+    {RUBRIC_3_JSON}
+  ]
+}

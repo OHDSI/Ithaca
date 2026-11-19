@@ -1,0 +1,61 @@
+You are an assistant checking the results of a rule-based system for determining whether a patient has a certain health condition based
+on the data the the patient's health record.
+
+The current health condition is: <HEALTH_CONDITION>
+
+The instructions for developing the rubric and the associated rules were as follows:
+###########################################
+<ORIGINAL_PROMPT>
+###########################################
+
+Here are the results from the original instructions that I want you to check:
+<ORIGINAL_RESULTS>
+
+Here is how the point total for this set of rules tranlates into determining whether a patient is considered a case or not:
+<SCORING_RESULTS>
+
+Here are your instructions:
+1) Focusing on the points assessed for each criteria.
+  a) The scoring is on a scale from -5 to 5.
+  b) the points for each rule should be weighted appropriately based on the relative importance of the criteria to a diagnosis for the
+    health condition.
+  c) published literature for <HEALTH_CONDITION> should be the source for appropriate weighting (scoring)
+
+Now assess: Are the points, a value of the relative importance, for each criteria appropriate?
+If not, change it based on information from clinical studies. HOWEVER, only change the points if you have strong justification based on clinical literature.
+When considering the scoring always consider the 3 scenarios:
+  1) The diagnosis code for <HEALTH_CONDITION> is present and the scoring for a case justifies the coding positive predictive value of the codes.
+  2) The diagnosis code for <HEALTH_CONDITION> is NOT present and the scoring for a case justifies the sensitivity of the codes.
+  3) The diagnosis code for <HEALTH_CONDITION> is present AND an alternative explanation codes is present and the scoring justifies the the relative positive predictive values and sensitvities.
+
+You will create a justification, in paragraph form, for the overall scoring.
+It must be appropriate for submission to a regulatory agency.
+Write the paragraph based on your scoring being the final scoring, that is, do not talk about "new scoring", just discuss the scoring itself.
+  1) The first paragraph will discuss the rationale for the positive points
+  2) The second paragraph will discuss the raationale for the negative points.
+  3) The third paragraph will discuss the overall justification based on the number of points necessary to be determined a case.
+
+You will also create 7 examples of how a patient would be considered a case (4 of the examples) or not a case (3 of the examples):
+  a) 3 examples from typical real-world cases of <HEALTH_CONDITION> using positive points only with clinical justification.
+  b) 2 examples from typical real-world cases of <HEALTH_CONDITION> using positive and negative points with clinical justification.
+  c) 2 examples from typical real-world cases of <HEALTH_CONDITION> using positive points and/or negative points where the diagnosis codes for <HEALTH_CONDITION> are NOT present.
+Include in each of your examples explicit justification for whether the scoring ruled the patient a case or not a case.
+NOTE: always include the criteria definitions of the rules in all your explanations. Do not just use the rule Ids (e.g., ER2) in your text.
+
+OUTPUT FORMAT:
+Give a JSON-structured summary for the following (DO NOT ADD ANY OTHER NON-JSON FORMATTED TEXT):
+
+[
+  {
+      "rule_id": "rule identifier",
+      "new_criteria": "text of the new and improved criteria",
+      "original_points": "what was the original points given for this criteria",
+      "new_points": "new points you gave this based on your assessment from clinical literature",
+      "rationale_points_change": "what was your rationale for the change to the points change",
+      "points_change: "did you make a change to the points for this criteria: YES or NO"
+  }
+]
+{
+"explanationOfScoring": "provide a paragrah-form explanation for the scoring and relative weighting",
+"examplesOfCases": "provide at least 5 examples from the scoring to be considered as case with justification"
+}

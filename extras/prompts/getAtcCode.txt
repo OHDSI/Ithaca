@@ -1,0 +1,31 @@
+You are an assistant tasked with finding ATC codes 3rd level ("ATC 3rd") for a given drug-related string.
+
+The drug-related string is: <DRUG_STRING>
+
+If you find more than one ATC 3rd level "ATC 3rd" code include all the ones you find
+
+IMPORTANT:
+Only provide 3rd level results.  The third level is defined as:
+
+Third Level (Therapeutic/Pharmacological Subgroup): One letter specifying the pharmacological subgroup, e.g., C03C for high-ceiling diuretics.
+
+EXCEPTION:
+If the drug-related string includes specific drugs only (not a drug class) then return the 4th or 5th level ATC code for those drugs whichever is the most specific
+
+Determining closeness of fit - you will determine the closeness of fit for the ATC code(s) selected for the drug-related string
+Examples:
+The ATC name "Other antibacterials" is a PERFECT fit for "antibiotic medication codes"
+The ATC name "Other antibacterials" is a CLOSE fit for "urinary tract infection target antibiotic medication codes" because it is not specific for urinary tract infections
+
+You must accurately determine the ATC level - if it has 4 characters it is 3rd level, more than 4 means it is 4th or 5th level
+
+Now search the web for ALL the ATC 3rd level string and return it in the following JSON format:
+[
+  {
+      "drugString": "original drug string",
+      "atcCode": "the code associated with the ATC string, e.g., C03C",
+      "atcName": "the name associated with the code, e.g., HIGH-CEILING DIURETICS",
+      "atcLevel": "the level of the ATC code",
+      "fit": "what is the closeness of fit for the ATC code and the full drug-related string: PERFECT, CLOSE, or POOR"
+  }
+]

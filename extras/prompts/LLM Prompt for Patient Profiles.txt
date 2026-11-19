@@ -1,0 +1,36 @@
+I have this dataset of health record items from a patient from an administrative claims (insurance) database:
+
+CSV_STRING
+
+These events occurred on or just after the index date based on the time range given.
+There were NO OTHER events pertinent to HEALTH_CONDITION.  DO NOT assume there was any conflicting data to what was presented.
+
+rubricId = "RUBRIC_ID" (to be used in output only)
+testString = "TEST_STRING" (to be used in output only)
+
+Using the information in the dataset, you will determine whether HEALTH_CONDITION likely occurred, did not likely occur,
+or you do not have enough information to determine occurrence at the index date.
+
+Rules:
+1) Use health data prior to the index date to determine possible signs, symptoms, and comorbid conditions for HEALTH_CONDITION.
+2) Use health data after the index date to determine possible sequelae for HEALTH_CONDITION.
+3) Even though the patient may have a diagnosis code for the condition, DO NOT put excessive weight on this.  It could be a
+rule-out diagnosis or entered by mistake in the data.
+4) IMPORTANT: this data is from insurance claims records.  The data is VERY likely missing many items especially signs and symptoms, and measurements (and values).
+  DO NOT consider this a complete patient health record.
+5) CRITICAL INSTRUCTION: Consider yourself like a physician who is seeing the patient without any preknowledge about
+the outcome. This will keep your assessment unbiased.
+6) For confidence response: if your finalAnswer is YES, what is your confidence that the answer is truly YES; if your finalAnswer
+  is NO, what is your confidence that the answer is truly NO.
+7) For low confidence answers, it is correct AND DESIRED to answer INDETERMINANT to finalAnswer and explain that in your rationale.
+
+Give a JSON-structured summary for the following (DO NOT ADD ANY OTHER NON-JSON FORMATTED TEXT):
+{
+  "healthCondition": "HEALTH_CONDITION",
+  "rubricId": "RUBRIC_ID",
+  "testString": "TEST_STRING",
+  "rationale": "what is your rationale for the final assessment?",
+  "finalAnswer": "what is your final answer for whether the patient has HEALTH_CONDITION? Answer YES, NO, INDETERMINANT",
+  "confidence": "what is your confidence level for the assessment? Answer between 0.00 to 1.00",
+  "llmProbability": "what is the probability that the patient has HEALTH_CONDITION? Answer definite, highly probable, probable, possible, unlikely"
+}

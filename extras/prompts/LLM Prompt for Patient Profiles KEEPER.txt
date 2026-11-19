@@ -1,0 +1,22 @@
+I have this dataset of health record items from a patient from an administrative claims (insurance) database:
+Your job is to determine if the following patient has <CONDITION>
+
+ONLY CONSIDER THE FIRST OCCURRENCE OF INFORMATION.  REPEAT INFORMATION IS SIMPLY THE SAME INFORMATION REPEATED!
+
+The following data was present in the patient record (there will be a lot of redundancy):
+<DATA_INCLUDED>
+
+The following data was NOT present in the patient record (there will be a lot of redundancy):
+<DATA_EXCLUDED>
+
+Now determine if the patient has <CONDITION>:
+
+Give a JSON-structured summary for the following (DO NOT ADD ANY OTHER NON-JSON FORMATTED TEXT):
+{
+  "rationaleForNonCase": "what is your rationale for the patient NOT being a case for <CONDITION>?",
+  "rationaleForCase": "what is your rationale for the patient being a case for <CONDITION>?",
+  "finalAnswer": "what is your final answer for whether the patient has <CONDITION>? Answer YES or NO",
+  "confidence": "what is your confidence level for the assessment? Answer between 0.00 to 1.00",
+  "confidenceReason": "what is your rationale for your confidence?",
+  "llmProbability": "what is the probability that the patient has <CONDITION>? Answer definite, highly probable, probable, possible, unlikely"
+}

@@ -1,0 +1,10 @@
+.Rproj.user/
+.Rhistory
+.RData
+.Rlibs/
+archive/
+lastPrompt/
+lastQuery/
+tmp_*.R
+config.yaml
+errorReportSql.txt

@@ -1,0 +1,10 @@
+System / Instruction:
+You will produce a single self-contained R function named evaluate_patient(patient)
+that accepts one patient's data as a named list or data.frame row and returns a list:
+list(outcome = TRUE/FALSE/NA, score = numeric, reasons = c(...)).
+Use only base R and clearly comment the logic. Handle missing fields as specified below.
+
+Rules:
+RULES_LIST
+
+Return only the R code for the function, no extra commentary.

@@ -1,0 +1,90 @@
+You are a clinical rubric-to-logic translator.
+
+I will give you a JSON-like file containing multiple rubrics. Each rubric may include:
+- criteria rules
+- hard_exclusions
+- alternative_explanations
+- evidence_rules
+
+Your task:
+Convert each rubric into the **universal coding schema nested JSON format** used for machine-readable rule definitions.
+
+### Output Format
+For each rubric, produce one parent JSON object with:
+{
+  "rule_id": "<from rubric or hardcode if missing>",
+  "description": "<clear English description of the rule based on criteria>",
+  "criteria": [
+      {
+        "criteria_id": "<unique id within rule>",
+        "component_type": "<diagnosis | procedure | medication | visit | other>",
+        "concept_set": "<exact concept_sets_needed text from source>",
+        "source_concept_set": "<if available from source>",
+        "count": "<numeric or textual threshold if present>",
+        "time_window_days": "<if present>",
+        "start_day": "<if present>",
+        "end_day": "<if present>",
+        "principal": "<boolean based on source>",
+        "setting": ["<setting values from source>"],
+        "dispense_timing": ["<if present>"],
+        "relation_to": "<criteria_id of related criteria if temporal or encounter-linked>"
+      }
+  ],
+  "logic_structure": {
+      "operator": "<AND | OR>",
+      "operands": ["<criteria_id>", "<criteria_id>"]
+  },
+  "setting_concept_sets": [
+      "<visit/procedure setting concept sets if present>"
+  ],
+  "hard_exclusions": [
+      {
+        "name": "<name from source>",
+        "criteria": "<criteria text from source>",
+        "concept_sets_needed": "<exact text from source>",
+        "start_day": "<start_day from source>",
+        "end_day": "<end_day from source>",
+        "occurrences_needed": "<occurrences_needed from source>",
+        "presence_or_absence": "<presence_or_absence from source>",
+        "rationale": "<rationale from source>"
+      }
+  ],
+  "alternative_explanations": [
+      "<conflict_diagnoses exactly from source>"
+  ],
+  "evidence_rules": [
+      {
+        "rule_id": "<rule_id from evidence rule>",
+        "category": "<category>",
+        "tier": "<tier>",
+        "points": "<points>",
+        "criteria": "<criteria text>",
+        "concept_sets_needed": "<exact text from source>",
+        "start_day": "<start_day>",
+        "end_day": "<end_day>",
+        "occurrences_needed": "<occurrences_needed>",
+        "presence_or_absence": "<presence_or_absence>",
+        "notes": "<notes>",
+        "conflict_diagnoses": "<exact text from source>"
+      }
+  ]
+}
+
+### Parsing Rules
+1. Group criteria from the same rubric into one `criteria` array under that rubric’s JSON object.
+2. Derive `description` from the criteria text in plain English, stating the logical intent.
+3. Preserve EXACT text for `concept_sets_needed` — do not normalize or rename.
+4. Fill `logic_structure` using AND/OR relationships implied in the criteria text; if missing, infer from narrative.
+5. Include `setting_concept_sets` if any visit/procedure setting codes are given.
+6. Place all hard exclusions for the rubric into the `hard_exclusions` array for that rubric.
+7. Place all alternative explanations from `conflict_diagnoses` into `alternative_explanations` for that rubric.
+8. Place all evidence rules in the `evidence_rules` array.
+9. If a field is not present, output `"null"` or `""` as appropriate.
+10. Output a JSON array containing one such rubric object per rubric in the source.
+
+Do not output prose, explanations, or markdown — return only the JSON array in the described format.
+
+---
+
+### INPUT
+<RUBRICS>

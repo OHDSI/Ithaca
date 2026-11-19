@@ -1,0 +1,310 @@
+# Ithaca workflow configuration
+#
+# Sections:
+#   general                - parameters shared by many functions (paths, LLM clients, databases, conditions)
+#   rubricDevelopment      - creating, reviewing, and editing rubrics
+#   conceptSetBuilding     - building and matching concept sets
+#   randomCohort           - building the random comparison cohort
+#   phenotypeReportScoring - scoring the phenotypes under evaluation against the random cohort
+#   dataDrivenScoring      - setting rule scores from the data (after the concept sets are built)
+#   other                  - optional and legacy settings
+#
+# The older layout (defaults.common / defaults.contextual / run) is still accepted. When both
+# layouts are present, the section keys below override the older ones.
+
+configVersion: 1
+
+# 1) General parameters that apply to many functions.
+general:
+  # Root output folder for rubric and scoring artifacts
+  outputDirectory: P:/llm/rubrics
+  # Optional custom prompt directory; null uses package defaults
+  promptDir: null
+  # Canonical concept-set library path (DuckDB file or folder containing default file name)
+  seedLibraryPath: P:/llm/rubrics/rubricConceptSetLibrary.duckdb
+  # Optional OHDSI WebAPI base URL
+  webapiBaseUrl: null
+  # Print verbose workflow logs
+  verbose: true
+  # Folder for concept-set builder files, shared across runs and conditions. Each concept set gets
+  # a subfolder; parallel builds save a finished set as result.rds and reuse it after an interruption.
+  # null uses <outputDirectory>/conceptSetBuild for parallel runs and the condition folders otherwise
+  conceptSetFolder: null
+  # Parallel worker processes, per step (1 = run one at a time in this R session). More workers
+  # finish sooner but put more concurrent load on shared services. Steps may be added here later.
+  parallelWorkers:
+    # Building missing concept sets (createRubricConceptSetsFromConfig.R). Each worker makes its own
+    # LLM calls, so more workers means more concurrent requests against your rate limit
+    conceptSetCreation: 1
+    # Running the rubric rule queries when scoring against the random cohort
+    # (scoreSubjectsAgainstRandomCohortFromConfig). Each worker opens its own database connection,
+    # so the warehouse must allow this many concurrent queries; SQL corrections stay in this session
+    scoring: 1
+    # Generating cohorts (random cohorts, phenotype cohorts, cohorts generated before scoring). Each
+    # worker runs one job (a condition or database) through its own connection, so the warehouse
+    # must allow this many concurrent jobs
+    cohortGeneration: 1
+  # Azure OpenAI reasoning client; endpointEnvVar/apiKeyEnvVar name environment variables
+  llmReasoning:
+    model: o3
+    endpointEnvVar: GENAI_O3_ENDPOINT
+    apiKeyEnvVar: GENAI_API_GPT4_KEY
+    apiVersion: 2024-12-01-preview
+  # Azure OpenAI non-reasoning client; apiArgs are passed to the chat API
+  llmNonReasoning:
+    model: gpt-4o
+    endpointEnvVar: GENAI_GPT4O_ENDPOINT
+    apiKeyEnvVar: GENAI_API_GPT4_KEY
+    apiVersion: 2023-03-15-preview
+    apiArgs:
+      temperature: 0
+      top_p: 1
+      seed: 1234
+
+  # Preferred Databricks CDM mapping: id -> CDM schema name
+  cdm:
+    merative_ccae_3909: cdm_merative_ccae_v3909
+    merative_mdcr_3909: cdm_merative_mdcr_v3909
+  # Optional per-database version label for runIthacaPipeline(); a change reruns that database.
+  # The CDM schema name (e.g. its _v3909 suffix) is already tracked, so this is rarely needed.
+  # databaseVersion:
+  #   merative_ccae_3909: 2025q2
+  # Optional catalog override; can be a single value or per-CDM map
+  # If omitted, DATABRICKS_CATALOG env var is used when present
+  catalog: null
+  # Cohort/staging schema for generated cohort tables (Databricks)
+  cohortDatabaseSchema: my_workspace.my_schema
+  # Prefix used for generated cohort table names; CDM identifier is auto-appended
+  # Example: ithaca_cohort + cdm_merative_ccae_v3909 -> ithaca_cohort_cdm_merative_ccae_v3909
+  cohortTablePrefix: ithaca_cohort
+  # Optional cohort table name override (single name or per-database mapping)
+  cohortTableName: null
+  # Concept library snapshot for scoring. null or "latest" uses the newest version (recorded in
+  # pluginResolution outputs); set an integer only to pin/reproduce an earlier snapshot.
+  conceptLibraryVersion: null
+  # Generate cohorts before scoring
+  generateCohorts: false
+  # Reuse existing scoring outputs if present
+  useExistingScores: false
+
+  # Points subtracted by the fixed AE1 rule when a subject has no code for the condition or its
+  # related diagnoses within -30 to +30 days of index. Any positive number; blank means 3.
+  # A condition's own zeroOccurrencePenalty overrides this.
+  zeroOccurrencePenalty: 3
+
+  # Optional CSV path for condition specs; when provided, it overrides conditionSpecs
+  # Required CSV columns: testCondition, dxCriteria, additionalInformation, rubricName, randomCohortDefinitionId
+  # Optional CSV columns: sourceCohortDefinitionId,
+  # randomSampleFromCohortDefinitionId, phenotypeCohortId, adjustableRuleId, zeroOccurrencePenalty
+  conditionSpecsCsvPath: null
+
+  # Named diagnosis-criteria choices used by conditionSpecs.dxCriteria.
+  # Condition files must use one of these keys, not the full prose definition.
+  # Each choice has:
+  #   criteria: text copied word for word into evidence rule ER2 in newly generated rubrics,
+  #     so describe only the codes, settings, and windows - not points.
+  #   additionalPoints: whole number 0-4 added to ER2's base 2 points (ER2 = 2 + additionalPoints).
+  dxCriteria:
+    inpatientOnly:
+      criteria: "One condition diagnosis code in an inpatient or emergency department setting within -5 to +5 of index."
+      additionalPoints: 0
+    inpatientOutpatient:
+      criteria: "One condition diagnosis code in an inpatient or emergency department setting within -5 to +5 of index, OR two condition diagnosis codes on distinct outpatient dates with the second diagnosis 1-60 days after the first both within -60 to +60 of index. Either path earns the same points and the paths do not add together."
+      additionalPoints: 0
+    outpatientOnly:
+      criteria: "Two condition diagnosis codes on distinct outpatient dates with the second diagnosis 1-60 days after the first both within -60 to +60 of index."
+      additionalPoints: 0
+    inpatientOutpatientRare:
+      criteria: "One condition diagnosis code in an inpatient or emergency department setting within -5 to +5 of index, OR two condition diagnosis codes on distinct outpatient dates with the second diagnosis 1-60 days after the first both within -60 to +60 of index. Either path earns the same points and the paths do not add together."
+      additionalPoints: 2
+    # For symptoms that cannot be tested (for example suicidal ideation): one code in any setting
+    # earns ER1 (3) + ER2 (2 + 4) = 9 points, one short of YES (10), so one minor ER3+ rule confirms
+    # it and any negative evidence (an AE) keeps it below YES. ER1 and ER2 fire on the same code, so
+    # the 9 points are one piece of evidence counted twice, not two independent signals.
+    untestableSymptom:
+      criteria: "One condition diagnosis code in any setting within -5 to +5 of index."
+      additionalPoints: 4
+
+  # Optional CSV with columns Phenotype and Definition; used when additionalInformation is null.
+  # testCondition is matched to Phenotype ignoring case and non-alphanumeric characters
+  # (e.g. "crohns disease" matches "Crohn's disease").
+  clinicalDefinitionFile: null
+
+  # One or more condition specifications used by every workflow. Cohort IDs are used by:
+  #   randomCohort section:           sourceCohortDefinitionId, randomCohortDefinitionId,
+  #                                   randomSampleFromCohortDefinitionId
+  #   phenotypeReportScoring section: phenotypeCohortId, adjustableRuleId
+  # Each condition may also set zeroOccurrencePenalty (CSV column or key) to override the
+  # default below.
+  conditionSpecs:
+    - testCondition: Gastroesophageal reflux disease
+      dxCriteria: outpatientOnly
+      additionalInformation: ""
+      rubricName: Gastroesophageal reflux disease
+      # sourceCohortDefinitionId: WebAPI cohort ID for the source phenotype cohort
+      # generated first and used for overlap/date-alignment logic in random cohort generation.
+      sourceCohortDefinitionId: null
+      # randomCohortDefinitionId: cohort_definition_id assigned to the generated random cohort rows
+      # written into the cohort table (target random cohort identifier).
+      randomCohortDefinitionId: 14412
+      # Optional cohort ID used to limit random sampling pool; when null sampling is unrestricted.
+      randomSampleFromCohortDefinitionId: null
+      # List of cohort IDs used later in testPhenotypeAlgorithmRubricReport(phenotypeCohortId = ...)
+      phenotypeCohortId: [14412]
+
+# 2) Rubric development: creating, reviewing, and editing rubrics.
+rubricDevelopment:
+  # Include lab values/results in rubric generation prompts
+  includeLabs: false
+  # Skip rubric creation when rubric artifacts already exist
+  useExistingRubric: false
+  # Use concept-set library hinting during rubric generation
+  useLibraryHints: false
+  # Similarity threshold for rubric hint candidate retrieval
+  libraryHintSimilarityThreshold: 0.94
+  # Number of hint candidates per requested concept set during rubric hinting
+  libraryHintTopCandidates: 5
+  # Independent LLM runs per rubric in reviewConciseRubric(); when > 1, a further LLM call
+  # consolidates the runs into one review and timesFlagged shows how many runs raised each finding
+  reviewRuns: 3
+  # Optional rubric templates; null uses built-in defaults
+  rubricTemplates: null
+  # Optional pre-run rubric edit list (conditionName, ruleId, updates, regenerateSql)
+  preRunEdit: null
+  # Optional post-run rubric edit list (conditionName, ruleId, updates, regenerateSql)
+  postRunEdit: null
+
+# 3) Concept set building: creating concept sets and matching them to the library.
+conceptSetBuilding:
+  # Database used for concept set creation (vocabulary access); null uses the first cdm entry
+  conceptSetDatabaseId: null
+  # Concept-set build workers: see general.parallelWorkers.conceptSetCreation
+  # Enable LLM adjudication for ambiguous concept-set matches
+  useLlmAdjudication: true
+  # Top-N embedding candidates passed to LLM adjudication
+  llmTopCandidates: 25
+  # Optional lower bound for embedding gray-zone adjudication trigger
+  llmAmbiguityMinScore: null
+  # Optional upper bound for embedding gray-zone adjudication trigger
+  llmAmbiguityMaxScore: null
+  # Trigger adjudication when top-1 vs top-2 embedding gap is <= this value
+  llmTop2GapThreshold: 0.015
+  # Minimum LLM confidence required to accept adjudicated decision
+  llmConfidenceThreshold: 0.60
+
+# 4) Random cohort scoring: random cohort defaults used by buildRandomOmopCohortFromConfig
+# (condition-level source IDs in conditionSpecs take precedence).
+randomCohort:
+  # Optional fallback source cohort definition ID from OHDSI WebAPI
+  sourceCohortDefinitionId: null
+  # Optional fallback random cohort definition ID (target cohort id); default 1
+  randomCohortDefinitionId: null
+  # Optional fallback cohort definition ID used to constrain random sampling pool
+  randomSampleFromCohortDefinitionId: null
+  # Optional random sample size
+  sampleSize: 2000000
+  minVisitStartDate: 01/01/2000
+  maxVisitEndDate: 12/31/2026
+  minAge: 0
+  maxAge: 120
+  cohortName: random_visit_sample
+  sourceCohortName: source_webapi_cohort
+  # Optional override; defaults to general.seedLibraryPath
+  seedLibraryPath: null
+  # Optional SQL path overrides
+  sqlFilePath: inst/sql/sql_server/build_random_omop_cohort.sql
+  validationSqlFilePath: inst/sql/sql_server/validate_overwrite_dates.sql
+
+# 5) Scoring of the phenotypes to evaluate: settings for testPhenotypeAlgorithmRubricReport
+# (single rubric per condition).
+# splayPrior/splayPost are required: days before/after the phenotype start date within which
+# a comparison cohort row counts as a match.
+# The scoring rules are optional. When any is set for a condition, the report re-scores the
+# latest fullScoringFile; subjects and unset thresholds still come from the latest sumCohortScores.
+phenotypeReportScoring:
+  # Optional CSV of scoring runs applied to every conditionSpec row. Relative paths
+  # are resolved under general.outputDirectory. Blank cells use the settings below.
+  phenotypeReportScoringCsvPath: null
+  default:
+    # Name recorded in the report's analysisName column and used in report file names.
+    analysisName: rubric_validation
+    # Days before the phenotype cohort start date allowed for a comparison-cohort match.
+    splayPrior: 7
+    # Days after the phenotype cohort start date allowed for a comparison-cohort match.
+    splayPost: 7
+    # Number of subjects sampled per class (TP, FP, TN, FN) in the support report.
+    sampleSubjectCount: 30
+    # Create FP/FN score-frequency CSV and PNG files.
+    frequencyPlotFpFnScores: false
+    # Create the detailed subject scoring-criteria report from sampled FP/FN subjects.
+    createSubjectSample: false
+    # Class labels (FP, FN, TP, TN) included by createSubjectSample; ignored when it is false.
+    classLabels: [FP, FN]
+    # Drop negative rule-score rows when recomputing totals from fullScoringFile.
+    excludeNegativeScores: false
+    # Absolute thresholds, e.g. yesScoreOverride: 5 and noScoreOverride: 2
+    yesScoreOverride: null
+    noScoreOverride: null
+    # Added to the current thresholds, e.g. -2 lowers the threshold by 2.
+    # Use either the override or the adjustment for a threshold, not both.
+    yesScoreAdjustment: null
+    noScoreAdjustment: null
+    # Change the points of the rule(s) listed in each condition's adjustableRuleId column in
+    # conditionSpecs. Override sets the points (>= 0); adjustment adds to them (result
+    # must stay >= 0). Use one, not both. A blank adjustableRuleId means ER1 (the index
+    # diagnosis rule in generated rubrics).
+    dxRuleScoreOverride: null
+    dxRuleScoreAdjustment: null
+  # Per-condition overrides keyed by rubricName; null clears a default for that condition
+  conditions: {}
+  #  Gastroesophageal reflux disease:
+  #    excludeNegativeScores: true
+  #    yesScoreAdjustment: -2
+  #    noScoreAdjustment: -2
+
+# 6) Data-driven rule scores: settings for applyDataDrivenRuleScoresFromConfig (run it after the
+# concept sets are built). Each rule is run on constructed populations in the databases and its
+# score is set from its likelihood ratio: round(scaleMax * ln(LR) / ln(capLr)). The new scores replace
+# the current ones only if the gate passes in every database; otherwise nothing is changed.
+dataDrivenScoring:
+  # Databases used as evidence (use at least two so a rule's effect has to replicate); null uses general.cdm
+  databaseIds: null
+  # CDM schemas for databases that are not in general.cdm
+  cdm: {}
+  #  Ccae: cdm_merative_ccae_v4149
+  # A likelihood ratio of capLr earns scaleMax points; a ratio of 1 earns 0
+  capLr: 10
+  scaleMax: 6
+  # Thresholds the gate uses; they are not written to the rubric (change reporting thresholds in
+  # phenotypeReportScoring)
+  yesScore: 10
+  noScore: 2
+  # Gate: shares of people reaching YES with the proposed scores. Cohort members (ER2 positives)
+  # get ER1 + ER2 points; differential-diagnosis negatives get neither. null skips a limit.
+  gate:
+    positiveYesMax: 0.95
+    positiveYesMin: 0.50
+    negativeYesMax: 0.10
+    separationMin: 0.30
+  # Rules that are not tested; they are never changed
+  excludeRuleIds: [ER1, ER2, AE1]
+  # Keep people whose person_id is a multiple of this number (1 = everyone; 97 for a quick test)
+  personModulus: 1
+  # Approximate number of sampled people used for the gate and report checks
+  matrixPersons: 200000
+  # Use the latest saved query results when they match the current rules and settings
+  reuseQueryResults: false
+  # Per-condition overrides keyed by rubricName (same keys as above); null removes a gate limit
+  conditions: {}
+  #  Gastroesophageal reflux disease:
+  #    capLr: 5
+  #    gate:
+  #      negativeYesMax: 0.15
+
+# 7) Other: optional and legacy settings.
+other:
+  # Optional cohort definition set (data frame/list with cohortId, cohortName, sql)
+  cohortDefinitionSet: null
+  # Legacy fallback: names of database spec objects to resolve from the R environment
+  # databaseSpecNames:
+  #   - CCAE_OHDA_DBSpec

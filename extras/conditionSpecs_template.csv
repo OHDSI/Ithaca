@@ -1,0 +1,2 @@
+testCondition,dxCriteria,additionalInformation,rubricName,randomCohortDefinitionId,sourceCohortDefinitionId,randomSampleFromCohortDefinitionId,phenotypeCohortId,ignore,adjustableRuleId,adjustableRuleScore,zeroOccurrencePenalty
+Gastroesophageal reflux disease,"1 inpatient/ED diagnosis OR 2 outpatient diagnoses 1-60 days apart",,Gastroesophageal reflux disease,26187001,26187,26187,"26187;3003",,ER1,,

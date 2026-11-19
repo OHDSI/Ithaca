@@ -1,0 +1,144 @@
+# Ithaca workflow configuration
+#
+# Defaults are split into:
+# - defaults.common: values usually used across most runs
+# - defaults.contextual: values that are often environment-specific (paths, IDs, endpoints)
+#
+# The run section overrides defaults.common/contextual.
+# Preferred DB config uses run.cdm mappings (Databricks).
+# Legacy fallback uses run.databaseSpecNames resolved from the R environment.
+
+configVersion: 1
+
+defaults:
+  common:
+    # Include lab values/results in rubric generation prompts
+    includeLabs: false
+    # Use concept-set library hinting during rubric generation
+    useLibraryHints: false
+    # Similarity threshold for rubric hint candidate retrieval
+    libraryHintSimilarityThreshold: 0.94
+    # Number of hint candidates per requested concept set during rubric hinting
+    libraryHintTopCandidates: 5
+    # Skip rubric creation when rubric artifacts already exist
+    useExistingRubric: false
+    # Enable LLM adjudication for ambiguous concept-set matches
+    useLlmAdjudication: true
+    # Top-N embedding candidates passed to LLM adjudication
+    llmTopCandidates: 25
+    # Optional lower bound for embedding gray-zone adjudication trigger
+    llmAmbiguityMinScore: null
+    # Optional upper bound for embedding gray-zone adjudication trigger
+    llmAmbiguityMaxScore: null
+    # Trigger adjudication when top-1 vs top-2 embedding gap is <= this value
+    llmTop2GapThreshold: 0.015
+    # Minimum LLM confidence required to accept adjudicated decision
+    llmConfidenceThreshold: 0.80
+    # Generate cohorts before scoring
+    generateCohorts: false
+    # Reuse existing scoring outputs if present
+    useExistingScores: false
+    # Print verbose workflow logs
+    verbose: true
+    # Azure OpenAI reasoning client; endpointEnvVar/apiKeyEnvVar name environment variables
+    llmReasoning:
+      model: o3
+      endpointEnvVar: GENAI_O3_ENDPOINT
+      apiKeyEnvVar: GENAI_API_GPT4_KEY
+      apiVersion: 2024-12-01-preview
+    # Azure OpenAI non-reasoning client; apiArgs are passed to the chat API
+    llmNonReasoning:
+      model: gpt-4o
+      endpointEnvVar: GENAI_GPT4O_ENDPOINT
+      apiKeyEnvVar: GENAI_API_GPT4_KEY
+      apiVersion: 2023-03-15-preview
+      apiArgs:
+        temperature: 0
+        top_p: 1
+        seed: 1234
+
+  contextual:
+    # Root output folder for rubric and scoring artifacts
+    outputDirectory: P:/llm/rubrics
+    # Optional custom prompt directory; null uses package defaults
+    promptDir: null
+    # Canonical concept-set library path (DuckDB file or folder containing default file name)
+    seedLibraryPath: P:/llm/rubrics/rubricConceptSetLibrary.duckdb
+    # Required for scoring reproducibility; set explicit snapshot version
+    conceptLibraryVersion: null
+    # Optional cohort table name override (single name or per-database mapping)
+    cohortTableName: null
+    # Cohort/staging schema for generated cohort tables (Databricks)
+    cohortDatabaseSchema: scratch.scratch_jswerdel
+    # Prefix used for generated cohort table names; CDM identifier is auto-appended
+    # Example: ithaca_cohort + cdm_merative_ccae_v3909 -> ithaca_cohort_cdm_merative_ccae_v3909
+    cohortTablePrefix: ithaca_cohort
+    # Optional catalog override; can be a single value or per-CDM map
+    # If omitted, DATABRICKS_CATALOG env var is used when present
+    catalog: null
+    # Optional OHDSI WebAPI base URL
+    webapiBaseUrl: null
+
+run:
+  # Optional CSV path for condition specs; when provided, it overrides run.conditionSpecs
+  # Required CSV columns: testCondition, dxCriteria, additionalInformation, rubricName, cohortId
+  conditionSpecsCsvPath: P:/llm/rubrics/conditionSpecs.csv
+
+  # One or more condition specifications for rubric + concept + scoring workflow
+  conditionSpecs:
+    - testCondition: Gastroesophageal reflux disease
+      dxCriteria: 1 inpatient/ED diagnosis OR 2 outpatient diagnoses 1-60 days apart
+      additionalInformation: ""
+      rubricName: Gastroesophageal reflux disease
+      cohortId: 14412
+
+  # Preferred Databricks CDM mapping: id -> CDM schema name
+  cdm:
+    # Ccae: cdm_merative_ccae_v4149
+    # FlatironMm: cdm_flatiron_mm_v4146
+    # HealthVerity: cdm_healthverity_cc_v4033
+    # Jmdc: cdm_jmdc_v4152
+    # KomodoKrd: cdm_komodo_krd_v4014
+    # Mdcd: cdm_merative_mdcd_v4150
+    # Mdcr: cdm_merative_mdcr_v4151
+    OptumDod: cdm_optum_extended_dod_v4155
+    OptumEhr: cdm_optum_ehr_v4154
+    # OptumSes: cdm_optum_extended_ses_v4156
+    # Premier: cdm_premier_v4157
+
+  # Legacy fallback: names of database spec objects to resolve from the R environment
+  # databaseSpecNames:
+  #   - CCAE_OHDA_DBSpec
+
+  # Random cohort build settings used by buildRandomOmopCohortFromConfig
+  randomCohort:
+    # Required source cohort definition ID from OHDSI WebAPI
+    sourceCohortDefinitionId: null
+    # Optional random cohort definition ID (target cohort id); default 1
+    randomCohortDefinitionId: 1
+    # Optional cohort definition ID used to constrain random sampling pool
+    randomSampleFromCohortDefinitionId: null
+    # Optional override of top-level webapiBaseUrl
+    webapiBaseUrl: https://epi.jnj.com:8443/WebAPI
+    # Optional random sample size
+    sampleSize: 2000000
+    minVisitStartDate: 01/01/2000
+    maxVisitEndDate: 12/31/2026
+    minAge: 0
+    maxAge: 120
+    cohortName: random_visit_sample
+    sourceCohortName: source_webapi_cohort
+    # Optional override; defaults to contextual seedLibraryPath
+    seedLibraryPath: null
+    # Optional SQL path overrides
+    sqlFilePath: inst/sql/sql_server/build_random_omop_cohort.sql
+    validationSqlFilePath: inst/sql/sql_server/validate_overwrite_dates.sql
+
+  # Optional rubric templates; null uses built-in defaults
+  rubricTemplates: null
+  # Optional cohort definition set (data frame/list with cohortId, cohortName, sql)
+  cohortDefinitionSet: null
+  # Optional pre-run rubric edit list (conditionName, ruleId, updates, regenerateSql)
+  preRunEdit: null
+  # Optional post-run rubric edit list (conditionName, ruleId, updates, regenerateSql)
+  postRunEdit: null

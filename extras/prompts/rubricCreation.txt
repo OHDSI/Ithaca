@@ -1,0 +1,15 @@
+You are building an OMOP CDM v5+ (Athena standard) phenotype rubric for suspected drug-induced liver injury (DILI),
+WITHOUT specifying a target drug cohort yet.
+
+Rubric Variation: <<RUBRIC_VARIATION_NAME>>
+
+Write a rubric that includes:
+A) Purpose: what this rubric is trying to detect or rule out
+C) Concept sets needed: list the concept set names (do NOT invent concept_id numbers; provide the clinical intent + suggested SNOMED/LOINC/CPT/ICD10-ish labels to search in Athena)
+D) Temporal logic: windowing and anchoring rules (index_date, lookback, follow-up)
+E) Inclusion rules: specific criteria (logic statements)
+F) Exclusion rules: competing etiologies and prior liver disease rules
+G) Severity rules: how to stratify mild/moderate/severe (include Hy’s law where possible)
+H) Output: what variables/flags the pipeline should produce (e.g., has_alt3xuln, has_tb2xuln, r_ratio, meets_hys_law, competing_etiology_present, etc.)
+
+Keep it implementable in SQL. Use precise boolean logic and thresholds. Avoid drug-specific assumptions.

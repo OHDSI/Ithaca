@@ -1,0 +1,56 @@
+I have this dataset of health record items from a patient from an administrative claims (insurance) database.
+The data includes the health care event and the day the event occurred relative to the index date where HEALTH_CONDITION possibly occurred:"
+
+CSV_STRING
+
+Using the information in the dataset, where:
+Health Record Item = item in the patient's health record under study
+Day in Study = day relative to the index date (day 0) for the health record item
+You will determine whether HEALTH_CONDITION likely occurred at the index date.
+
+You will be using a scoring rubric to determine if the subjects have HEALTH_CONDITION.
+The following explains how the rubric was created:
+<RUBRIC_PREAMBLE>
+
+The scoring rubric to use is in JSON format below:
+<SCORING_RUBRIC>
+
+Rules:
+1) Use health data prior to the index date to determine possible signs, symptoms, and comorbid conditions for HEALTH_CONDITION.
+2) Use health data after the index date to determine possible sequelae for HEALTH_CONDITION.
+3) All other health record items, such as procedures, comorbid diagnoses, and measurements have been left in place.
+4) IMPORTANT: this data is from insurance claims records.  The data is VERY likely missing many items especially signs and symptoms, and measurements (and values).
+  DO NOT consider this a complete patient health record.
+5) IMPORTANT: if the rubric rule requires multiple occurrences of an event, e.g., "≥2 administrations or prescription fills for...",
+  YOU MUST RECORD EVIDENCE FOR BOTH OCCURRENCES EVERY TIME!
+6) IMPORTANT: if there are 2 parts to the rule, BOTH parts must be fulfilled.
+Example: if the rule is: "ED or inpatient encounter with a diagnosis code for acute hepatic failure or toxic liver disease WITHIN −14 to +30 days of index" then there must
+be evidence for both "ED or inpatient encounter" AND "a diagnosis code for acute hepatic failure or toxic liver disease"
+YOU MUST RECORD EVIDENCE FOR BOTH PARTS OF THE RULE EVERY TIME!
+
+when you provide scoringElements, structure the output as a comma-separated string with the following elements for each score:
+rule_id; criteria (in double quotes); points; patient health record item (in double quotes); day in study (in parentheses);
+insert a cariage return character after each day in study to separate it from the next rule_id
+
+Give a JSON-structured summary for the following (DO NOT ADD ANY OTHER NON-JSON FORMATTED TEXT):
+{
+  "patientScore": "what is the patient's final score based on the rubric? (only a number - no extra text",
+  "scoringElements": "provide a comma separated string of all the elements of the rubric that were used in the score",
+  "finalAnswer": "Does this patient have HEALTH_CONDITION? Answer YES, NO, INSUFFICIENT EVIDENCE, NO - HARD EXCLUSION"
+  "additionalInformation": "Include reason for forced hard exclusion or other pertinent information",
+  "llmAssessment": "Based on the data alone, what would you say is the likelihood of the patient having HEALTH_CONDITION? Answer definite, highly probable, probable, possible, unlikely",
+  "rationale": "what is your rationale for the final LLM assessment?"
+}
+
+REMEMBER:
+--if the rubric rule requires multiple occurrences of an event, e.g., "≥2 administrations or prescription fills for...",
+ere must be evidence for each of the multiple occurences.  YOU MUST RECORD EVIDENCE FOR BOTH OCCURRENCES EVERY TIME!
+
+--if there are 2 parts to the rule, both parts must be fulfilled.  Record evidence for both parts.
+Example: if the rule is: "ED or inpatient encounter with a diagnosis code for acute hepatic failure or toxic liver disease WITHIN −14 to +30 days of index" then there must
+be evidence for both "ED or inpatient encounter" AND "a diagnosis code for acute hepatic failure or toxic liver disease"
+YOU MUST RECORD EVIDENCE FOR BOTH PARTS OF THE RULE EVERY TIME!
+
+--for evidence rules, ensure that conflict diagnoses in the rule DO NOT APPLY.  For example, if a conflict diagnosis
+occurs on the event day +/- 2 days, this invalidates the rule.  Always note this in your scoringElements and assign a score
+of 0 for that rule (show the rule in the coring element and explain that it wasn't used because of the conflict diagnosis).

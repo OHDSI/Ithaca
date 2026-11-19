@@ -1,0 +1,62 @@
+• Name of health condition:  Ischemic stroke  
+  
+• Summary of Health Condition  
+  – An ischemic stroke is an acute interruption of blood flow to a region of the brain, producing focal neurologic deficits that can become permanent if reperfusion is not rapidly restored.  Standard management typically involves emergent neuro-imaging, intravenous thrombolysis, mechanical thrombectomy when indicated, early antiplatelet or anticoagulant therapy, and post-acute rehabilitation.  
+  – In administrative claims data, misclassification is common because the principal diagnosis code is sometimes applied “just in case” during work-ups for other neurological or metabolic problems, or used when the definitive etiology is still unclear in the emergency department.  
+  – False-positive scenario: An ED visit for a complex migraine receives an ischemic-stroke ICD-10 code while imaging is pending; triptan therapy is given and the MRI is normal—coding exists but the patient did not have a stroke.  
+  – False-negative scenario: An elderly patient with aphasia and hemiplegia is given alteplase and later undergoes thrombectomy; the admission is coded only as “Cerebral artery occlusion with infarction” (an interventional radiology procedure code but no explicit “stroke” diagnosis) and follow-up rehab/antiplatelet fills occur—no stroke diagnosis appears, yet the clinical course is a true ischemic stroke.  
+  
+• Hard-Exclusion (rule-out) Criteria – purpose: eliminate diagnoses or procedures fundamentally incompatible with an acute ischemic stroke  
+  – Any intracranial, subarachnoid, or intracerebral hemorrhage diagnosis near the index date.  
+  – Traumatic brain injury with accompanying skull fracture, traumatic intracranial hemorrhage, or craniotomy for trauma.  
+  – Hemorrhage-specific neurosurgical procedures (e.g., aneurysm clipping/coiling, craniotomy for bleed).  
+  – Brain arteriovenous malformations or vascular malformation repairs in the peri-index window.  
+  – Malignant or benign brain neoplasms that can mimic stroke signs but represent a distinct pathology.  
+  – Each hard-exclusion carries a –100 weight, instantly nullifying any positive evidence.  
+  
+• Alternative-Explanation Flags – purpose: down-weight conditions that could reasonably explain similar utilization or neurologic findings  
+  – Transient ischemic attack (TIA) codes without supporting reperfusion therapy.  
+  – Complex or complicated migraine with aura.  
+  – Seizure disorders, postictal paralysis, or concurrent EEG evaluation.  
+  – Severe hypoglycemia with coma, Bell palsy, or metabolic/toxic mimics.  
+  – Primary or secondary brain tumors, multiple sclerosis, or other demyelinating disease.  
+  – These flags subtract 2–6 points each, ensuring that mimickers do not satisfy the stroke phenotype on sparse evidence.  
+  
+• Evidence-Building Rules – purpose: aggregate claims-based signals that strongly support a true acute ischemic stroke  
+  – High-specificity procedures: intravenous thrombolysis (alteplase, tenecteplase) and mechanical thrombectomy.  
+  – Imaging within the acute window: head CT or brain MRI, especially when performed in the ED or inpatient setting.  
+  – Medication patterns: new antiplatelet or anticoagulant starts, continued refills, or combination therapy with statins.  
+  – Inpatient utilization: hospital stays for cerebrovascular disease, discharge to rehabilitation or skilled nursing facilities, and documented inpatient rehab facility admissions.  
+  – Post-acute sequelae and services: hemiplegia/paresis or dysphagia diagnoses, swallowing therapy, multiple physical/occupational/speech therapy encounters, and neurology follow-up visits.  
+  – Diagnosis evidence: a stroke code in an inpatient or ED claim is permitted but never sufficient on its own—additional management/utilization signals are required. Positive rules contribute +1 to +4 points, with higher weights assigned to reperfusion procedures and thrombectomy.  
+  
+• Scoring logic  
+  – Positive evidence rules add between +1 and +4; alternative-explanation flags subtract –2 to –6; hard-exclusions impose –100.  
+  – A total score ≥6 = case, 2–5 = indeterminate, ≤1 = non-case.  
+  – High-specificity events (e.g., mechanical thrombectomy at +4) quickly propel the score above the case threshold, while multiple moderate signals can also accumulate to ≥6.  
+  – A single strong alternative explanation (e.g., primary brain tumor at –6) can neutralize several modest positive findings, preventing false positives.  
+  
+• Scoring examples  
+  1. Clear case (Total = 10 → Case)  
+     – ED ischemic-stroke diagnosis (+2)  
+     – Alteplase administration (+4)  
+     – Mechanical thrombectomy (+4)  
+     – No alternative-explanation or hard-exclusion codes.  
+  2. Migraine mimic correctly downgraded (Total = 1 → Non-case)  
+     – Outpatient stroke diagnosis (+2)  
+     – Head CT (+2)  
+     – Complex migraine with aura diagnosis and triptan dispensing (–3)  
+     – Net score: 1 → Non-case.  
+  3. Seizure confounder prevented (Total = 0 → Non-case)  
+     – ED seizure diagnosis with EEG (–3)  
+     – Antiplatelet medication fill (+2)  
+     – Single inpatient stroke diagnosis (+2)  
+     – Net score: 1 → Non-case.  
+  4. Indeterminate profile (Total = 3 → Indeterminate)  
+     – Head CT in ED (+2)  
+     – New antiplatelet start (+2)  
+     – TIA diagnosis within the window (–3)  
+     – Net score: 3 → Indeterminate; may require chart review.  
+  
+• Conclusion  
+  The weighted rule set substantially reduces misclassification compared with a simple diagnosis-code approach. The migraine patient who received an erroneous stroke code is downgraded to a non-case because the –3 penalty for the migraine/triptan combination overwhelms weak evidence, while the reperfusion-treated patient who lacked an explicit stroke code still crosses the case threshold through high-specificity procedure and medication signals. This structured framework therefore improves the accuracy of ischemic-stroke ascertainment for epidemiologic studies based on claims data.

@@ -1,0 +1,40 @@
+You are an assistant checking the results of a rule-based system for determining whether a patient has a certain health condition based
+on the data the the patient's health record.
+
+The current health condition is: <HEALTH_CONDITION>
+
+The instructions for developing the rubric and the associated rules were as follows:
+###########################################
+<ORIGINAL_PROMPT>
+###########################################
+
+Here are the results from the original instructions that I want you to check:
+<ORIGINAL_RESULTS>
+
+Here are your instructions:
+1) Focusing on the criteria:
+  a) does it follow all of the instructions given? If not change it to follow the rules
+  b) is it clear such that someone can read it and know exactly what is meant? If not change it to make it clearer
+  c) will the new criteria, if changed, be easily tranlated into a SQL query?
+  d) do not change the day range included in the criteria unless the day range violates the rules for the rubric.
+
+2) Focusing on the concept sets needed:
+  a) are all the necessary concept sets included in the list after the criteria change? If not, add new concept sets
+  b) are all the concept sets clear and understandable? If not change it to make it clearer
+
+OUTPUT FORMAT:
+Give a JSON-structured summary for the following (DO NOT ADD ANY OTHER NON-JSON FORMATTED TEXT):
+
+[
+  {
+      "rule_id": "rule identifier",
+      "original_criteria": "exact text of the original criteria",
+      "new_criteria": "text of the new and improved criteria",
+      "rationale_criteria_change": "what was your rationale for the change to the criteria",
+      "criteria_change": "did you make a change in the criteria: YES or NO",
+      "original_concept_sets": "exact text of the original concept sets needed",
+      "new_concept_sets: "text of the new and improved concept sets",
+      "rationale_concept_sets_change": "what was your rationale for the change to the concept sets",
+      "concept_sets_change": "did you make a change in the concept sets: YES or NO"
+  }
+]

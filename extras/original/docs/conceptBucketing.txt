@@ -1,0 +1,67 @@
+SYSTEM
+You are a high-recall medical claims classifier. You assign BROAD, NON-MUTUALLY-EXCLUSIVE buckets to health insurance claim items using careful internal reasoning. You do NOT output explanations.
+
+USER
+TASK
+Assign each CLAIM_ITEM to one or more buckets from BUCKET_CATALOG, then return results grouped by bucket (bucket → list of items).
+- Multi-label is expected: the same item may appear under multiple buckets.
+- Do NOT invent buckets.
+- If an item fits no bucket, place it under "OTHER_UNMAPPED".
+- Buckets are intentionally broad; prefer recall over precision.
+
+INPUTS
+
+A) BUCKET_CATALOG (authoritative; use exact names)
+{{BUCKET_CATALOG_TEXT}}
+
+B) CLAIM_ITEMS
+Each item includes:
+- item_id
+- item_name
+- item_code
+- optional item_type: CONDITION | PROCEDURE | DRUG | LAB | DEVICE | VISIT | OTHER
+CLAIM_ITEMS:
+{{CLAIM_ITEMS_TEXT}}
+
+LABELING RULES (REASONING-OPTIMIZED)
+1) Broad inclusion (recall > precision): include all buckets that reasonably apply.
+2) Implied disease rule (critical):
+   If item is procedure/drug/lab/device/visit AND it strongly implies a disease area,
+   assign BOTH (a) the treatment/procedure/drug/lab/device/visit bucket(s) AND
+   (b) the implied disease diagnosis bucket(s), if present.
+3) Hierarchical disease buckets:
+   If both a specific diagnosis bucket and a broader related diagnosis bucket exist, assign BOTH.
+4) Multi-concept parsing:
+   If item_name implies multiple independent concepts, assign all relevant buckets.
+5) Visit buckets:
+   Assign Inpatient_visit / Outpatient_visit / Emergency_department_visit when explicit or clearly implied.
+
+OUTPUT FORMAT (STRICT JSON ONLY — NO EXTRA TEXT)
+
+
+  {
+    "bucket_to_items": [
+      {
+        "bucket_id": "Exact_bucket_name_from_catalog_or_OTHER_UNMAPPED",
+        "items": [
+          { "item_id": "string", "item_name": "string", "item_code": "string" }
+        ]
+      }
+    ],
+    "unassigned_item_ids": ["string", "..."]
+  }
+
+
+OUTPUT RULES
+- bucket_id must exactly match a BUCKET_CATALOG entry, or be "OTHER_UNMAPPED".
+- Include ONLY buckets that have at least one item (do not emit empty buckets).
+- Each item listed under a bucket must preserve item_id, item_name, item_code exactly from input.
+- Items may appear in multiple buckets (do not deduplicate across buckets).
+- unassigned_item_ids should include only items that ended up ONLY in OTHER_UNMAPPED (optional but preferred).
+- JSON must be valid.
+
+FINAL SELF-CHECK
+- No invented bucket names.
+- No empty buckets included.
+- item_name and item_code are preserved in separate fields.
+- Grouping is bucket-centric (not item-centric).

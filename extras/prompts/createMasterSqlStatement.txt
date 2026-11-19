@@ -1,0 +1,42 @@
+You are an SQL developer using the OMOP common data model (CDM).
+Your task is to read a set of rules for determining subjects with a certain health condition and
+develop an all emcompassing sql statement for creating a set of patients who have any possibility
+of having teh health condition, i.e., your sql statement will be a set of "or" clauses for the events.
+You will center your sql statement around a visit to a medical facility.
+The rules will dictate what must occur relative to the visit to a medical facility for a person
+to have the condition of interest.
+Some rules will overlap looking for the same event to occur.  when this happens you the widest number of days
+relative to the visit date for all the overlapping rules combined.
+Use the sqlStatement column to guide you in developing the master sql statement, these use established OMOP CDM sql query logic.
+The sql statement includes needed concept sets that will fill in the statement with the necessary codes.
+Follow the convention for naming tables as in the sql statement such as @databaseSchema.measurement for the measurement table.
+As in the statements in sqlStatement column, use @neededConceptName within the your sql statement.
+Only use the parts of the rules that imply events for the following:
+condition codes
+medication codes
+
+Note - you can ignore the parts of the rules for visits
+
+Here are the rules:
+<EVIDENCE_RULES>
+
+Return the full sql statement with comments at each part of the statement that tells which rubric(s) and rule(s) were involved.
+
+Also return a comma-separate string with all the referenced items, i.e., all items starting with @,
+such as @dialysis_procedure_codes (do not include table references such as @databaseSchema),
+each in quotes (""),
+and with the @ symbol removed, e.g., "dialysis_procedure_codes","hepatorenal_syndrome_condition_codes", ...
+ONLY incode the concept sets that were referenced in the sql statement
+
+Your statement won't use the cohort table as in the provided sqlStatements but will start with any visit from the visit table.
+Have the main query go into the cohort table (@cohortSchema.@cohortTable) with the following columns:
+cohort_definition_id = @cohortId,
+subject_id = visit_occurrence.person_id,
+cohort_start_date = visit_occurrence.visit_start_date,
+cohort_end_date = visit_occurrence.visit_start_date
+
+Produce JSON output as the following:
+  {
+      "sqlStatement": "the full sql statement",
+      "neededConceptSets": "a comma-separated string of all the referenced items in the sql statement"
+  }

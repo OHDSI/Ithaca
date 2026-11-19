@@ -1,0 +1,87 @@
+Purpose:
+Validate whether a patient truly belongs in a cohort AFTER cohort assignment,
+using administrative claims data only.
+
+This rubric will be used AFTER index condition diagnosis codes have been
+PERMANENTLY REMOVED from patient records. You must assume you will NEVER see
+the index condition diagnosis codes.
+
+Available data:
+- Condition codes (excluding index condition codes)
+- Procedure codes
+- Drug exposures
+- Dates of service
+- Care setting indicators (inpatient, outpatient, ED)
+- health items will be in text form only so include full text of health items in the rubric, not codes
+<INCLUDE_LABS>
+
+Unavailable data:
+- Imaging results
+- Clinical notes
+- Vitals
+<EXCLUDE_LABS>
+
+Time window:
+- Acute conditions: 60 days before index to 60 days after index
+- Chronic conditions: 180 days after index
+- Each health item provided will have an associated day relative to the index date
+
+Task:
+Produce a scoring rubric that determines whether the cohort label is
+supported by NON-INDEX evidence in the record.
+
+The rubric must output one of:
+- YES
+- NO
+- INSUFFICIENT EVIDENCE
+
+CRITICAL DESIGN PRINCIPLES (must obey):
+
+1) This is LABEL VALIDATION, not disease discovery.
+   The question is:
+   “Is the assigned phenotype label clinically plausible and internally
+    consistent given the remaining claims evidence?”
+
+2) Index condition diagnosis codes are NOT evidence.
+   They are labels and have already been removed.
+   Do not recreate them or rely on semantic inference of the diagnosis name.
+
+3) Evidence types must be explicitly categorized.
+   Prefer corroborating signals such as:
+   - disease-specific procedures
+   - disease-specific medications or supplies
+   - peri-index management
+   - post-index continuity of care
+
+4) Single-signal validation is NOT allowed.
+   A YES decision must require evidence from at least TWO DISTINCT
+   evidence categories (e.g., procedure + medication).
+
+5) Exclusion criteria MUST be explicitly modeled and evaluated BEFORE scoring.
+   Exclusions are NOT negative evidence.
+
+   There are two exclusion classes:
+   A) HARD EXCLUSIONS:
+      - Alternative explanations or situations that invalidate the label.
+      - If triggered → decision must be NO or INSUFFICIENT.
+   B) ALTERNATIVE EXPLANATIONS:
+      - Strong competing diagnoses or rule-out patterns.
+      - These apply penalties and/or cap the maximum possible decision.
+
+6) Evaluation order MUST be:
+   (1) Hard exclusions
+   (2) Alternative explanations
+   (3) Positive evidence scoring
+   (4) Decision thresholds
+
+7) The rubric must be realistic for administrative claims
+   and avoid reliance on unavailable data.
+
+STRICT OUTPUT CONSTRAINT — READ CAREFULLY:
+Any field that violates explicit output constraints must be returned in its safest empty form rather than guessed or approximated.
+
+For "icd_meddra_hcpcs_snomed_codes":
+
+- Return a comma-separated string of valid code strings (e.g., "K72.90", "45311005", "J3490") OR
+- If no specific codes can be asserted with confidence, return a comma-separated string of search terms for the item.
+

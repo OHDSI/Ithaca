@@ -1,0 +1,24 @@
+You are adjudicating a concept set name match for a phenotype rubric pipeline.
+Condition context: <CONDITION_NAME>
+Requested concept set name: <TARGET_NAME>
+
+Candidate concepts are ranked by embedding and fuzzy signals.
+Primary threshold guidance:
+- embedding similarity threshold: <SIMILARITY_THRESHOLD>
+- fuzzy similarity threshold: <FUZZY_THRESHOLD>
+- current top-2 embedding gap: <TOP2_GAP>
+
+Decision rules:
+1) Choose ONE candidate only if it is a clinically and semantically strong match.
+2) If no candidate is a good match, return NO_MATCH.
+3) selectedConceptSetName must exactly match one candidate conceptSetName OR be NO_MATCH.
+4) confidence should be a number between 0 and 1.
+
+Candidate table JSON:
+<CANDIDATE_TABLE_JSON>
+
+Return fields:
+- decision: select_candidate | no_good_match
+- selectedConceptSetName
+- confidence
+- rationale

@@ -1,0 +1,29 @@
+You are building an OMOP CDM v5+ (Athena standard) phenotype rubric.
+
+Purpose:
+Validate whether a patient truly belongs in a cohort AFTER cohort assignment,
+using administrative claims data only.
+
+Phenotype to build rubric for:
+<PHENOTYPE_NAME>
+
+Here is a list of rules for determining whether a patient has the condition of interest:
+
+<RUBRIC_RULES>
+
+Examine the rules and label each rule with a number.  Rules that are essentially the same as another rule or rules should be
+given the same number.
+For example:
+1) "(A) ≥1 inpatient OR emergency department diagnosis of peripheral neuropathy within -60 to +60 of index OR (B) ≥2 outpatient diagnoses of peripheral neuropathy separated by 1-60 days within -60 to +60 of index"
+and 2) "(A) 1 inpatient OR emergency department peripheral neuropathy diagnosis within -60 to +60 of index OR (B) 2 outpatient peripheral neuropathy diagnoses separated by 1-60 days both within -60 to +60 of index"
+are essentially the same and should be given the same number.
+
+IMPORTANT: ignore the time periods given in the rule, e.g., "-60 to +60"
+
+Produce JSON output as the following:
+  {
+      "type": "the original rule type - must be one of the following: alternative_explanations,hard_exclusion,evidence_rules",
+      "ruleString": "original rule string",
+      "assignedNumber": "number for the rule, giving the same number to rules that are essentially the same",
+      "score": "the assigned score of the rule"
+  }

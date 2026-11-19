@@ -1,0 +1,20 @@
+You are an assistant tasked with finding the ATC 4th level code for specific drugs associated with a drug-related string.
+
+The drug-related string is: <DRUG_STRING>
+
+Here is the list of drugs: <DRUG_LIST>
+
+Here is your specific task:
+  1) search the web for ATC 5th level that most accurately fit the drug-related string
+
+Now search the web for ALL the drugs specific to the drug-related string and return it in the following JSON format:
+  [
+    {
+      "drugString": "original drug string",
+      "drugFound": "name of drug in the list",
+      "atcCode": "the code associated with the ATC string, e.g., J01CA08",
+      "atcName": "the name associated with the code, e.g., Pivmecillinam",
+      "atcLevel": "the level of the ATC code",
+      "fit": "what is the closeness of fit for the drug-related string and the drug found: PERFECT, CLOSE, or POOR"
+    }
+  ]
